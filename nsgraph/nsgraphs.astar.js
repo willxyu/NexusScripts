@@ -5,12 +5,7 @@
  * g(n) is actual distance from source node to `n`, and
  * h(n) is heuristic distance from `n` to target node.
  */
-module.exports = aStarPathSearch;
-
 var NO_PATH = defaultSettings.NO_PATH;
-
-module.exports.l2 = l2;
-module.exports.l1 = l1;
 
 /**
  * Creates a new instance of pathfinder. A pathfinder has just one method:
