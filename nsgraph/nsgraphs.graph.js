@@ -13,7 +13,6 @@
  *  graph.addLink(2, 3);  // now graph contains three nodes and one link.
  *
  */
-module.exports = createGraph;
 
 // var eventify = require('ngraph.events');
 var eventify = function(subject) {
