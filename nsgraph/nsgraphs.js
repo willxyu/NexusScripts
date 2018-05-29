@@ -1,11 +1,66 @@
-/**
- * Based on https://github.com/mourner/tinyqueue
- * Copyright (c) 2017, Vladimir Agafonkin https://github.com/mourner/tinyqueue/blob/master/LICENSE
- * 
- * Adapted for PathFinding needs by @anvaka
- * Copyright (c) 2017, Andrei Kashcha
- */
+// Defaults
+NO_PATH = [];
+if (typeof Object.freeze === 'function') { Object.freeze(NO_PATH) }
 
+ng = typeof ng !== 'undefined' ? ng : {}
+
+ng.blindh = function(/* a, b */) { return 0 }     // blindHeuristic
+ng.constd = function(/* a, b */) { return 1 }     // constantDistance
+ng.compFS = function(a, b) { return a.fs - b.fs } // compareFScore
+ng.setHin = function(n, h) { n.heapIndex = h }    // setHeapIndex
+ng.compF1 = function(a, b) { return a.f1 - b.f1 } // compareF1Score
+ng.compF2 = function(a, b) { return a.f2 - b.f2 } // compareF2Score
+ng.setH1  = function(n, h) { n.h1 = h }           // setH1
+ng.setH2  = function(n, h) { n.h2 = h }           // setH2
+
+// Events
+ng.validate = function(s) {
+ if (!s) { throw new Error('Eventify cannot use falsy object as events subject.') }
+ var r = ['on','fire','off']
+ for (var i=0; i<r.length; ++i) {
+   if (s.hasOwnProperty(r[i])) {
+    throw new Error('Subject cannot be Eventified, as it already has property "'+r[i]+'".')
+   }
+ } }
+
+ng.createEvents = function(what) {
+ var r = Object.create(null)
+ return {
+   on: function(name, cb, c) {
+    if (typeof cb !== 'function') { throw new Error('Callback expected as Function.') }
+    var h = r[name]
+    if (!h) { h = r[name] = [] }
+    h.push({callback: cb, ctx: c})
+    return what },
+
+   off: function(name, cb) {
+    var rm = (typeof name === 'undefined')
+    if (rm) { r = Object.create(null); return what }
+    if (r[name]) {
+      var d = (typeof cb !== 'function')
+      if (d) { delete r[name] } else {
+       var cbs = r[name]
+       for (var i=0; i<cbs.length; ++i) {
+         if (cbs[i].callback === cb) {
+          cbs.splice(i, 1)
+         }
+       }
+      }
+    }
+    return what },
+
+   fire: function(name) {
+    var cbs = r[name]
+    if (!cbs) { return what }
+    var fa
+    if (arguments.length > 1) { fa = Array.prototype.splice.call(arguments, 1) }
+    for (var i=0; i<cbs.length; ++i) {
+      var cbi = cbs[i]
+      cbi.callback.apply(cbi.ctx, fa) }
+    return what }
+ } }
+
+// Heap Implementation
 NodeHeap = function(data, options) {
  if (!(this instanceof NodeHeap)) { return new NodeHeap(data, options) }
  if (!Array.isArray(data)) {
