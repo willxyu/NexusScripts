@@ -1,13 +1,3 @@
-module.exports = function(subject) {
-  validateSubject(subject);
-
-  var eventsStorage = createEventsStorage(subject);
-  subject.on = eventsStorage.on;
-  subject.off = eventsStorage.off;
-  subject.fire = eventsStorage.fire;
-  return subject;
-};
-
 function createEventsStorage(subject) {
   // Store all event listeners to this hash. Key is event name, value is array
   // of callback records.
