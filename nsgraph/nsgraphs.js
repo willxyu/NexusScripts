@@ -61,7 +61,31 @@ ng.createEvents = function(what) {
  } }
 
 // Graph Structure
-eventify = function(s) {
+Node = function(id, data) { this.id = id; this.links = null; this.data = data }
+Link = function(fr, to, data, id) {
+ this.fromID = fr; this.toID = to; this.data = data; this.id = id }
+// Add Link to Node
+ng.altn = function(n, link) { if (n.links) { n.links.push(link) } else { n.links = [link] } }
+// HashCode
+ng.hash = function(s) {
+ var h = 0, i, chr, len
+ if (s.length == 0) { return h }
+ for (i=0, len = s.length; i < len; i++) {
+   chr  = s.charCodeAt(i)
+   h    = ((h << 5) - h) + chr
+   h   |= 0 }
+ return h }
+// makeLinkId
+ng.mlid = function(fr, to) { return fr.toString() + ' > ' + to.toString() }
+// indexOfElementInArray
+ng.indoe = function(el, arr) {
+ if (!arr) { return -1 }
+ if (arr.indexOf) { return arr.indexOf(el) }
+ for (var i=0; i<arr.length; i++) {
+   if (arr[i] === el) { return i } }
+ return -1 }
+
+ng.events = function(s) {
  ng.validate(s)
  var e  = ng.createEvents(s)
  s.on   = e.on
@@ -86,7 +110,7 @@ ng.makeGraph = function(opt) {
      recordLinkChange = noop,
      recordNodeChange = noop,
      enterModification = noop,
-     exitModification = noop;
+     exitModification = noop
 
   // this is our public API:
   var graphPart = {
@@ -95,12 +119,8 @@ ng.makeGraph = function(opt) {
     removeLink: removeLink,
     removeNode: removeNode,
     getNode: getNode,
-    getNodesCount: function () {
-      return nodesCount;
-    },
-    getLinksCount: function () {
-      return links.length;
-    },
+    getNodesCount: function () { return nodesCount; },
+    getLinksCount: function () { return links.length; },
     getLinks: getLinks,
     forEachNode: forEachNode,
     forEachLinkedNode: forEachLinkedNode,
@@ -110,11 +130,9 @@ ng.makeGraph = function(opt) {
     clear: clear,
     hasLink: getLink,
     hasNode: getNode,
-    getLink: getLink
-  };
+    getLink: getLink }
 
-  // this will add `on()` and `fire()` methods.
-  eventify(graphPart);
+  ng.events(graphPart)
 
   monitorSubscribers();
 
@@ -220,10 +238,10 @@ ng.makeGraph = function(opt) {
     links.push(link);
 
     // TODO: this is not cool. On large graphs potentially would consume more memory.
-    addLinkToNode(fromNode, link);
+    ng.altn(fromNode, link);
     if (fromId !== toId) {
       // make sure we are not duplicating links for self-loops
-      addLinkToNode(toNode, link);
+      ng.altn(toNode, link);
     }
 
     recordLinkChange(link, 'add');
@@ -234,20 +252,20 @@ ng.makeGraph = function(opt) {
   }
 
   function createSingleLink(fromId, toId, data) {
-    var linkId = makeLinkId(fromId, toId);
+    var linkId = ng.mlid(fromId, toId);
     return new Link(fromId, toId, data, linkId);
   }
 
   function createUniqueLink(fromId, toId, data) {
     // TODO: Get rid of this method.
-    var linkId = makeLinkId(fromId, toId);
+    var linkId = ng.mlid(fromId, toId);
     var isMultiEdge = multiEdges.hasOwnProperty(linkId);
     if (isMultiEdge || getLink(fromId, toId)) {
       if (!isMultiEdge) {
         multiEdges[linkId] = 0;
       }
       var suffix = '@' + (++multiEdges[linkId]);
-      linkId = makeLinkId(fromId + suffix, toId + suffix);
+      linkId = ng.mlid(fromId + suffix, toId + suffix);
     }
 
     return new Link(fromId, toId, data, linkId);
@@ -262,7 +280,7 @@ ng.makeGraph = function(opt) {
     if (!link) {
       return false;
     }
-    var idx = indexOfElementInArray(link, links);
+    var idx = ng.indoe(link, links);
     if (idx < 0) {
       return false;
     }
@@ -275,14 +293,14 @@ ng.makeGraph = function(opt) {
     var toNode = getNode(link.toId);
 
     if (fromNode) {
-      idx = indexOfElementInArray(link, fromNode.links);
+      idx = ng.indoe(link, fromNode.links);
       if (idx >= 0) {
         fromNode.links.splice(idx, 1);
       }
     }
 
     if (toNode) {
-      idx = indexOfElementInArray(link, toNode.links);
+      idx = ng.indoe(link, toNode.links);
       if (idx >= 0) {
         toNode.links.splice(idx, 1);
       }
@@ -382,11 +400,12 @@ ng.makeGraph = function(opt) {
   }
 
   function createNodeIterator() {
-    // Object.keys iterator is 1.3x faster than `for in` loop.
-    // See `https://github.com/anvaka/ngraph.graph/tree/bench-for-in-vs-obj-keys`
-    // branch for perf test
     return Object.keys ? objectKeysIterator : forInIterator;
   }
+
+  ng.oki = function(cb) {
+   if (typeof cb !== 'function') { return }
+   var k = Object.keys(nodes)
 
   function objectKeysIterator(callback) {
     if (typeof callback !== 'function') {
@@ -413,68 +432,6 @@ ng.makeGraph = function(opt) {
       }
     }
   }
-}
-
-// need this for old browsers. Should this be a separate module?
-function indexOfElementInArray(element, array) {
-  if (!array) return -1;
-
-  if (array.indexOf) {
-    return array.indexOf(element);
-  }
-
-  var len = array.length,
-    i;
-
-  for (i = 0; i < len; i += 1) {
-    if (array[i] === element) {
-      return i;
-    }
-  }
-
-  return -1;
-}
-
-/**
- * Internal structure to represent node;
- */
-function Node(id, data) {
-  this.id = id;
-  this.links = null;
-  this.data = data;
-}
-
-function addLinkToNode(node, link) {
-  if (node.links) {
-    node.links.push(link);
-  } else {
-    node.links = [link];
-  }
-}
-
-/**
- * Internal structure to represent links;
- */
-function Link(fromId, toId, data, id) {
-  this.fromId = fromId;
-  this.toId = toId;
-  this.data = data;
-  this.id = id;
-}
-
-function hashCode(str) {
-  var hash = 0, i, chr, len;
-  if (str.length == 0) return hash;
-  for (i = 0, len = str.length; i < len; i++) {
-    chr   = str.charCodeAt(i);
-    hash  = ((hash << 5) - hash) + chr;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return hash;
-}
-
-function makeLinkId(fromId, toId) {
-  return fromId.toString() + 'ðŸ‘‰ ' + toId.toString();
 }
 
 
