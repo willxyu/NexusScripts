@@ -11,7 +11,7 @@ fnu.utils = (function() {
     if (obj instanceof Object) { copy = {}; 
      for (var attr in obj) { if (obj.hasOwnProperty(attr)) { copy[attr] = clone(obj[attr]) } }
      return copy }
-    throw new Error('Unable to copy obj! Type not supported.') }
+    throw new Error('Unable to copy obj! Type not supported.') },
      
    lpad: function(str, len, ch) {
     if (typeof str == 'number') { str = str.toString() }
