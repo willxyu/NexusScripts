@@ -21,4 +21,4 @@ var fnu = (function (fnu) {
    return ch.repeat(r) + str }
    
   return fnu
-})(fnu || {}))
+}(fnu || {}))
