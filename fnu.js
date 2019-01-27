@@ -1,4 +1,4 @@
-var fnu = (function (fnu) {
+fnu = (function (fnu) {
    
   return fnu
 }(fnu || {}))
