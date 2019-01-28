@@ -45,7 +45,7 @@ if (typeof client != 'undefined') {
        var temp = '';
        if (lines[idx].line) { temp = lines[idx].line }
        else if (lines[idx].prompt) { temp = lines[idx].prompt }
-       if (temp.length) { client.on_msg_recv(temp) }
+       if (temp.length) { client.handle_on_msg_recv(temp) }
      }
      client.run_function('onBlock', null, 'ALL')
      client.display_text_block(lines)
