@@ -71,7 +71,7 @@ if (typeof client != 'undefined') {
       if (client.echo_gmcp) { print('[GMCP: ' + data.GMCP.method + ' ' + data.GMCP.args, client.color_gmcpecho) }
       var gmcp_method = data.GMCP.method
       var gmcp_args   = data.GMCP.args
-      if (gmcp_args.length == 0) { gmcp_args = "''" }
+      if (gmcp_args.length == 0) { gmcp_args = "\"\"" }
       gmcp_args = JSON.parse(gmcp_args)
       
       if (gmcp_method == 'Core.Ping') { if (GMCP.PingStart) { GMCP.PingTime = new Date().getTime() - GMCP.PingStart }; GMCP.PingStart = null }
