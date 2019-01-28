@@ -2,11 +2,12 @@
 gmcpf = typeof gmcpf != 'undefined' || {}
 
 gmcpf.map = {
-  ['Char.Name']          : 'charname',
-  ['Char.StatusVars']    : 'charsvars',
-  ['Char.Status']        : 'status',
-  ['Char.Vitals']        : 'vitals',
-  ['Char.Skills.Groups'] : 'skillgroups',
+  ['Char.Name']          : {use: 'original', original: 'charname',    lean: 'leanCharname'},
+  ['Char.StatusVars']    : {use: 'original', original: 'charsvars',   lean: 'leanCharsvars'},
+  ['Char.Status']        : {use: 'original', original: 'status',      lean: 'leanStatus'},
+  ['Char.Vitals']        : {use: 'original', original: 'vitals',      lean: 'leanVitals'},
+  ['Char.Skills.Groups'] : {use: 'lean',     original: 'skillgroups', lean: 'leanSkillgroups'},
+  ['Char.Skills.List']   : {use: 'original', original: 'skillList',   lean: 'leanSkillList'},
 }
 
 gmcpf.charname = function(data) {
@@ -67,35 +68,30 @@ gmcpf.skillgroups = function(data) {
   })
 }
 
+gmcpf.skillList = function(data) {
+  if (GMCP.WaitingForSkills == true) {
+    var dsl = $('<div/>')
+    var div = '<div id=\'group_skills\' class=\'\' title=\'Abilities in ' + ucfirst(data.group) + '\' style=\'font-size:0.8em;\'>'
+    div += '<table id=\'skill_listing\'>'
+    for (var i = 0; i < data.list.length; ++i) {
+      var desc = ''
+      if (data.descs && (data.desc.length > i)) { desc = data.descs[i] }
+      div += '<tr class=\'skill_name\' group=\'' + data.group + '\' skill=\'' + data.list[i] + '\'><td>' + data.list[i] + '</td><td>' + desc + '</td></tr>'
+    }
+    div += '</table>'
+    dsl.append(div).find('.skill_name').click(function() {
+      send_GMCP('Char.Skills.Get', {'group': $(this).attr('group'), 'name': $(this).attr('skill') })
+    })
+    cm_dialog('#', {id: 'skill_list', top_align: 40, title: 'Abilities in ' + ucfirst(data.group), width: ($('#container').width() & .4), height: ($('#container').height() * 0.5), content: dsl })
+    GMCP.WaitingForSkills = false
+  }
+}
 
 
+// Lean Section
+gmcpf.leanSkillgroups = function(data) { }
 
-        if (gmcp_method == "Char.Skills.List")
-        {
-            if (GMCP.WaitingForSkills == true)
-            {
-                var dsl = $("<div/>");
 
-                var div = "<div id=\"group_skills\" class=\"\" title=\"Abilities in " + ucfirst(gmcp_args.group) + "\" style=\"font-size:.8em;\">";
-
-                div += '<table id="skill_listing">';
-                for (var i = 0; i < gmcp_args.list.length; ++i)
-                {
-                    var desc = '';
-                    if (gmcp_args.descs && (gmcp_args.descs.length > i)) desc = gmcp_args.descs[i];
-                    div += "<tr class=\"skill_name\" group=\"" + gmcp_args.group + "\" skill=\"" + gmcp_args.list[i] + "\"><td>" + gmcp_args.list[i] + "</td><td>" + desc + '</td></tr>';
-                }
-                div += '</table>';
-
-                dsl.append(div).find(".skill_name").click(function() {
-                    send_GMCP("Char.Skills.Get", {"group":$(this).attr("group"), "name":$(this).attr("skill")});
-                });
-
-                cm_dialog("#", {id: "skill_list", top_align: 40, title: "Abilities in " + ucfirst(gmcp_args.group), width: ($("#container").width() * .4), height: ($("#container").height() * .5), content: dsl});
-
-                GMCP.WaitingForSkills = false;
-            }
-        }
 
         if (gmcp_method == "Char.Skills.Info")
         {
@@ -964,4 +960,33 @@ gmcpf.skillgroups = function(data) {
                 send_GMCP("Char.Skills.Get", {"group":$(this).find('.skill_group').attr("group")});
                 GMCP.WaitingForSkills = true;
             });
+        }
+
+        if (gmcp_method == "Char.Skills.List")
+        {
+            if (GMCP.WaitingForSkills == true)
+            {
+                var dsl = $("<div/>");
+
+                var div = "<div id=\"group_skills\" class=\"\" title=\"Abilities in " + ucfirst(gmcp_args.group) + "\" 
+                style=\"font-size:.8em;\">";
+
+                div += '<table id="skill_listing">';
+                for (var i = 0; i < gmcp_args.list.length; ++i)
+                {
+                    var desc = '';
+                    if (gmcp_args.descs && (gmcp_args.descs.length > i)) desc = gmcp_args.descs[i];
+                    div += "<tr class=\"skill_name\" group=\"" + gmcp_args.group + "\" skill=\"" + gmcp_args.list[i] + "\"><td>" + 
+                    gmcp_args.list[i] + "</td><td>" + desc + '</td></tr>';
+                }
+                div += '</table>';
+
+                dsl.append(div).find(".skill_name").click(function() {
+                    send_GMCP("Char.Skills.Get", {"group":$(this).attr("group"), "name":$(this).attr("skill")});
+                });
+
+                cm_dialog("#", {id: "skill_list", top_align: 40, title: "Abilities in " + ucfirst(gmcp_args.group), width: ($("#container").width() * .4), height: ($("#container").height() * .5), content: dsl});
+
+                GMCP.WaitingForSkills = false;
+            }
         }
