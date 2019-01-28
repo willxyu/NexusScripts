@@ -2,9 +2,11 @@
 gmcpf = typeof gmcpf != 'undefined' || {}
 
 gmcpf.map = {
-  ['Char.Name']      : 'charname',
-  ['Char.StatusVars']: 'charsvars',
-  ['Char.Status']    : 'status',
+  ['Char.Name']          : 'charname',
+  ['Char.StatusVars']    : 'charsvars',
+  ['Char.Status']        : 'status',
+  ['Char.Vitals']        : 'vitals',
+  ['Char.Skills.Groups'] : 'skillgroups',
 }
 
 gmcpf.charname = function(data) {
@@ -26,52 +28,47 @@ gmcpf.status = function(data) {
   client.draw_affdef_tab()
 }
 
+gmcpf.vitals = function(data) {
+  if (data.charstats) {
+    GMCP.CharStats = data.charstats
+    client.update_affdef_stats()
+  }
+  var vote_display = data.vote ? 'block' : 'none'
+  if (vote_display != $('#vote').css('display')) {
+    $('#vote').css('display', vote_display)
+    relayout_status_bar()
+  }
+  GMCP.gauge_data = data;
+  for (var v in data) {
+    if (v == 'charstats') { continue }
+    client.set_variable('my_' + v, data[v])
+  }
+  parse_gauges(data)
+  if (client.game == 'Lusternia') { parse_lusternia_wounds(data) }
+  // ? client.handle_event('GMCP', 'Char.Vitals', '')
+}
+
+gmcpf.skillgroups = function(data) {
+  $('#tbl_skills').html('<table><tbody></tbody></table>')
+  var skills = $('#tbl_skills tbody')
+  var temp   = ''
+      temp  += '<tr><td class=\'skill_group\' style=\'padding: 1px; font-weight: bolder;\''
+      temp  += 'group=\'DATA_NAMEG\'>DATA_NAME&nbsp;</td>'
+      temp  += '<td style=\'padding: 1px;\'>DATA_RANK</td></tr>'
+  var str    = ''
+  for (var i in data) {
+    str += temp.replace('DATA_NAMEG', data[i].name).replace('DATA_NAME', data[i].name).replace('DATA_RANK', data[i].rank)
+  }
+  // reduced multiple appending to single call
+  skills.append(str)
+  $('#tbl_skills tr').css('cursor', 'pointer').click( function() {
+    send_GMCP('Char.Skills.Get', {'group': $(this).find('.skill_group').attr('group')})
+    GMCP.WaitingForSkills = true
+  })
+}
 
 
 
-        if (gmcp_method == "Char.Vitals")
-        {
-            // Handled by each game's character_module.php include
-            if (gmcp_args.charstats) {
-                GMCP.CharStats = gmcp_args.charstats;
-                client.update_affdef_stats();
-            }
-            var vote_display = gmcp_args.vote ? 'block' : 'none';
-            if (vote_display != $('#vote').css('display')) {
-                $('#vote').css('display', vote_display);
-                relayout_status_bar();
-            }
-
-            GMCP.gauge_data = gmcp_args;
-            // put all the info to variables
-            for (v in gmcp_args)
-            {
-                if (v == 'charstats') continue;
-                client.set_variable('my_'+v, gmcp_args[v]);
-            }
-
-            parse_gauges(gmcp_args);
-            if (client.game == 'Lusternia') parse_lusternia_wounds(gmcp_args);
-
-            gmcp_fire_event = true;
-            gmcp_event_param = '';
-        }
-
-        if (gmcp_method == "Char.Skills.Groups")
-        {
-            $("#tbl_skills").html("<table><tbody></tbody></table>");
-            var skills = $("#tbl_skills tbody");
-
-            for (var i in gmcp_args)
-            {
-                skills.append("<tr><td class=\"skill_group\" style=\"padding: 1px; font-weight:bolder;\" group=\"" + gmcp_args[i].name + "\">" + gmcp_args[i].name + "&nbsp;</td><td style=\"padding: 1px;\">" + gmcp_args[i].rank + "</td></tr>");
-            }
-
-            $("#tbl_skills tr").css("cursor","pointer").click(function() {
-                send_GMCP("Char.Skills.Get", {"group":$(this).find('.skill_group').attr("group")});
-                GMCP.WaitingForSkills = true;
-            });
-        }
 
         if (gmcp_method == "Char.Skills.List")
         {
@@ -921,4 +918,50 @@ gmcpf.status = function(data) {
                 GMCP.Status[v] = s[v];
             var status = GMCP.Status;
             client.draw_affdef_tab();
+        }
+
+        if (gmcp_method == "Char.Vitals")
+        {
+            // Handled by each game's character_module.php include
+            if (gmcp_args.charstats) {
+                GMCP.CharStats = gmcp_args.charstats;
+                client.update_affdef_stats();
+            }
+            var vote_display = gmcp_args.vote ? 'block' : 'none';
+            if (vote_display != $('#vote').css('display')) {
+                $('#vote').css('display', vote_display);
+                relayout_status_bar();
+            }
+
+            GMCP.gauge_data = gmcp_args;
+            // put all the info to variables
+            for (v in gmcp_args)
+            {
+                if (v == 'charstats') continue;
+                client.set_variable('my_'+v, gmcp_args[v]);
+            }
+
+            parse_gauges(gmcp_args);
+            if (client.game == 'Lusternia') parse_lusternia_wounds(gmcp_args);
+
+            gmcp_fire_event = true;
+            gmcp_event_param = '';
+        }
+
+        if (gmcp_method == "Char.Skills.Groups")
+        {
+            $("#tbl_skills").html("<table><tbody></tbody></table>");
+            var skills = $("#tbl_skills tbody");
+
+            for (var i in gmcp_args)
+            {
+                skills.append("<tr><td class=\"skill_group\" style=\"padding: 1px; font-weight:bolder;\" group=\"" +
+                gmcp_args[i].name + "\">" + gmcp_args[i].name + "&nbsp;</td><td style=\"padding: 1px;\">" + gmcp_args[i].rank + 
+                "</td></tr>");
+            }
+
+            $("#tbl_skills tr").css("cursor","pointer").click(function() {
+                send_GMCP("Char.Skills.Get", {"group":$(this).find('.skill_group').attr("group")});
+                GMCP.WaitingForSkills = true;
+            });
         }
