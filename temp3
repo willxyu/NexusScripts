@@ -1,0 +1,1223 @@
+var client = window/*.top*/;
+var ws;
+
+var connected_mud = false;
+var on_connect_mud;
+var disconnect_reason = '';
+var load_settings = true;
+var charname = '';
+var last_charname = '';
+
+var num_msgs, scrollback_num_msgs;
+
+// Limit for messages displayed in the output window (will trim from the beginning past limit) //
+// 	- Should be kept reasonably small (< 100-ish) to prevent
+//	  the browser from clogging on all of the data
+var msg_limit = 50;
+var scrollback_msg_limit;
+
+var mode;
+var stopped;
+var logging = false;
+var system_changed = false;
+
+var scrollback;
+
+var settings_window;
+
+var fullstop = false, bindings_enabled = true, aliases_enabled = true, functions_enabled = true, variables_enabled = true, triggers_enabled = true;
+var use_wss = false, force_wss = false;
+
+var clear_input, extra_break;
+var stack_delimiter;
+var show_timestamps;
+var show_scroll_timestamps;
+var show_timestamp_milliseconds;
+var popups_help;
+var gag_prompts;
+var no_prompts;
+var no_map_bg;
+var gag_comm;
+var show_item_vnums;
+var reverted;
+
+var custom_colors;
+var custom_colors_reversed;
+
+var echo_input;   // display sent commands
+var color_inputecho;
+var echo_target;  // display targeting notices
+var color_targetecho;
+var echo_gmcp;;   // display GMCP messages (spammy! for debugging only!)
+var color_gmcpecho;
+var echo_triggers;  // display triggers
+var color_trigecho;
+
+var debug_log_raw = false;
+
+var logged_in = false;
+var gagged = true;
+
+var commands = [];
+var command_index = 0;
+var partial_command = '';
+
+var last_send;
+var command_counter = 0;
+var command_counter_interval = null;
+
+var custom_system = "";
+var autosave = true;
+
+$(document).ready(function(){
+    client.set_default_settings();
+
+    Nexus.client = client;
+
+    if (typeof client.init_ui != "undefined")
+        client.init_ui();
+
+    client.apply_settings();
+
+    if (getCookie("IRE.WSS") == "true")
+        toggle_wss();
+
+	num_msgs = scrollback_num_msgs = 0;
+
+    $(window).bind('beforeunload', function() {
+        if (connected_mud)
+            return "This will close your client's connection!";
+
+        if (client.system_changed)
+            return "You have unsaved changes to your settings. Close without exporting?";
+    });
+
+    $("#fullstop").click(function () {
+        if (!fullstop)
+        {
+            fullstop = true;
+            $(this).addClass('off')
+                   .attr("title", "Click to resume all function and trigger execution");
+
+        } else {
+            fullstop = false;
+            $(this).removeClass('off')
+                   .attr("title", "Click to stop all function and trigger execution");
+        }
+    })
+
+    // fullscreen switching support
+    if (client.supports_fullscreen()) {
+        $("#fullscreen").click(function () {
+            client.toggle_fullscreen();
+        });
+        $(document).on('webkitfullscreenchange mozfullscreenchange fullscreenchange MSFullscreenChange', function() {
+            if (client.is_fullscreen()) $('#fullscreen').removeClass('off');
+            else $('#fullscreen').addClass('off');
+        });
+    }
+    else {
+        $("#fullscreen").css('display', 'none');
+    }
+
+    // autosave
+    window.setInterval(function() {
+        if (!client.autosave) return;
+        if (client.system_changed) client.gmcp_save_system(false);
+    }, 90 * 1000);
+
+	mode = "websocket";
+
+    set_disconnected_mud(false);
+
+    if (typeof auto_login != "undefined" && auto_login === true)
+       $("#login_form").submit();
+    else //if (typeof auto_create == "undefined" || auto_create !== true)
+       show_login();
+
+    if (typeof auto_create != "undefined" && auto_create === true)
+    {
+        client.creation_dialog_init(files + '/new_character.php');
+    }
+
+    client.setup_command_counter();
+
+    for (var i = 1; i <= 250; i++)
+        ow_Write("#output_main", "<br/>");
+
+});
+
+var ws_send = function (s) {
+    // convert the string to an arraybuffer, to preserve special chars (don't want them UTF8-d)
+    var arry = s.split('');
+    for (var i = 0; i < arry.length; ++i)
+        arry[i] = arry[i].charCodeAt(0);
+
+    arry = new Uint8Array(arry);
+    ws.send(arry);
+}
+
+var ws_connect = function (use_secondary) {
+
+    $("#newchar").dialog("close");
+    $("#char_login").dialog("close");
+
+    if (document.location.protocol == 'https:') force_wss = true;
+    if (force_wss) use_wss = true;
+
+    var addr = ((use_wss == true) ? 'wss' : 'ws') + '://';
+    if (use_secondary)
+        addr += wshost2 + ':' + wsport2 + wsdir2;
+    else
+        addr += wshost + ':' + ((use_wss == true) ? wsport_ssl : wsport) + wsdir;
+
+    // If we are using the primary address, this flag indicates that should the connection fail, we'll try the secondary
+    // one next. As soon as we successfully connect, the flag gets cleared. The flag also gets cleared after we kickoff
+    // the secondary connection, to avoid looping.
+    var try_secondary = !use_secondary;
+
+    ws = new WebSocket(addr, 'binary');
+    ws.binaryType = 'arraybuffer';
+    ws.onmessage = handle_read;
+    ws.onopen = function(e) {
+        try_secondary = false;
+        set_connected_mud();
+    };
+    ws.onclose = function(e) {
+        set_disconnected_mud();
+    };
+    ws.onerror = function(e) {
+        if (use_wss && (!force_wss)) {
+            use_wss = false;
+            ws.onclose = null;  // so that the onclose handler doesn't fire
+            ws_connect(false);
+            return;
+        }
+
+        if (try_secondary) {
+            try_secondary = false;
+            ws.onclose = null;  // so that the onclose handler doesn't fire
+            ws_connect(true);
+            return;
+        }
+        print(e + "<br/><b>See browser console for more details.</b>", "red");
+        client.connect_error = e;
+    };
+}
+
+var setup_command_counter = function()
+{
+    if (client.command_counter_interval) window.clearInterval(client.command_counter_interval);
+    client.command_counter_interval = window.setInterval(function() { client.command_counter -= 100; if (client.command_counter < 0) client.command_counter = 0; }, 1000);
+}
+
+var send_direct = function(input, no_expansion)
+{
+    if (!input || typeof input == undefined)
+        return false;
+
+    var do_expansion = !no_expansion;
+
+    if (typeof input != "string")
+        input = input.toString();
+
+    client.command_counter++;
+    if (client.command_counter >= 200) {
+        if (client.command_counter == 200)
+            print('You seem to have sent more than 200 commands within a second. You probably have some runaway trigger or an endless alias loop - disabling commands for a while.', '#FF8080');
+        client.setup_command_counter();  // just in case -- had the interval disappear at one point
+        return;
+    }
+
+    var real_cmds = [];
+    if (do_expansion) {
+        var commands = [];
+        var split_regex = new RegExp(escapeRegExp(client.stack_delimiter), 'gm');
+        var parts = input.split(split_regex);
+
+        // Delimiter split
+        for (var i = 0; i < parts.length; ++i) {
+            var cmd = parts[i];
+            if (cmd == "") continue;
+            var cmds = [];
+            // Aliases
+            if (aliases_enabled)
+                cmds = handle_aliases(cmd);
+            else
+                cmds.push(cmd);
+
+            for (var j = 0; j < cmds.length; ++j)
+                commands.push(cmds[j]);
+        }
+
+        // Now process internal commands, expand variables and execute functions.
+        for (var i = 0; i < commands.length; ++i) {
+            var cmd = commands[i];
+
+            if (cmd.indexOf("@set") == 0)
+            {
+                var temp = cmd.split(/ /);
+                if (temp[1] != "" && temp[2] != "")
+                {
+                    if (client.set_variable(temp[1], temp[2]))
+                    {
+                        print("Set " + temp[1] + " to " + temp[2]);
+                        display_variables();
+                    }
+                    continue;
+                }
+            }
+
+            if (variables_enabled) cmd = handle_variables(cmd);
+
+            if (functions_enabled)
+            {
+                cmd = handle_functions(cmd);
+                if (!cmd) continue;
+            }
+
+            // This is a real command - add it to the queue
+            real_cmds.push(cmd);
+        }
+    } else
+        real_cmds.push(input);   // skip the cmds loop entirely if we don't expand anything
+
+    if (!real_cmds.length) return;
+    if (!ws) return;
+
+    for (var i = 0; i < real_cmds.length; ++i) {
+        var s = real_cmds[i];
+        if (client.echo_input)
+            print(s, client.color_inputecho);
+        ws_send(s + "\r\n");
+    }
+    last_send = new Date().getTime();
+}
+
+function send()
+{
+    if (!ws) return false;
+
+    var input = $("#user_input");
+    var t = input.val();
+
+    if (commands[0] != t)
+    {
+        commands.unshift(t);
+        if (commands.length > 100)
+            commands.pop();
+
+        command_index = 0;
+        partial_command = '';
+    }
+
+    send_direct(t);
+
+    if (clear_input === true)
+    {
+        input.val("");
+        client.fix_input_line_height();
+    }
+    else
+        input[0].setSelectionRange(0,t.length);
+    // the placeholder is distracting, so get rid of it, then put it back if they don't send any commands for 20 seconds
+    input.attr('placeholder', '');
+    if (input[0].hinttimer) window.clearTimeout(input[0].hinttimer);
+    input[0].hinttimer = window.setTimeout(function() { input.attr('placeholder', 'Type commands here'); }, 20 * 1000);
+    return true;
+}
+
+function send_as_normal(s)
+{
+    send_direct(s);
+}
+
+// extend the login form in game-specific ways
+var add_login_specials = function(dlg)
+{
+    if (client.game != 'Achaea' && client.game != "Starmourn") return;
+    if ($(window).width() < 1024) return;
+    
+    if (client.game == 'Achaea')
+    {
+       var add = '<div class="game_info" style="position:absolute; left:-285px; margin-top:-225px; top:50%; width:257px; height:450px; z-index:2; background-image:url(\'/includes/images/login/achaea-info.png\'); background-repeat:no-repeat; " >';
+       add += '<a class="game_learn_more" style="position:absolute; left: 48px; bottom:50px; height:29px; width:159px; background-image:url(\'/includes/images/login/achaea-learn-more.png\'); background-repeat:no-repeatl " target="_blank" href="https://'+mudhost+'"></a>';
+    }
+    else
+    {
+       var add = '<div class="game_info" style="position:absolute; left:-285px; margin-top:-237px; top:50%; width:257px; height:486px; z-index:2; background-image:url(\'/includes/images/login/starmourn-info.png\'); background-repeat:no-repeat; " >';
+       add += '<a class="game_learn_more" style="position:absolute; left: 48px; bottom:50px; height:29px; width:159px; background-image:url(\'/includes/images/login/starmourn-learn-more.png\'); background-repeat:no-repeatl " target="_blank" href="https://'+mudhost+'"></a>';
+    }
+    add += '</div>';
+    dlg.append(add);
+    dlg.css('left', (($(window).width() - dlg.width() - 285) / 2 + 285) + 'px');  // re-center
+}
+
+function show_login()
+{
+    var loginID;
+    var dlgClass='login_dialog';
+    // If we're on at LEAST a portrait-mode tablet  //
+    if ($(window).width() >= 768)
+    {
+        loginID = "#m_login_form";
+        if ($(window).height() >= 800) dlgClass += ' login_dialog_big';
+        if ($("#char_login").length == 0)
+            cm_dialog(loginID, {id:"char_login", modal:true, dialogClass:dlgClass, title:"Sign In or Create a Character",inline:true, width:"700px", height:450, closeOnEscape: false, resizable: false, coverall: true});
+        else
+            $("#char_login").dialog("open");
+        client.add_login_specials ($("#char_login").parent());
+    } else {
+        loginID = "#m_login_form_small";
+        if ($("#char_login").length == 0)
+            cm_dialog(loginID, {id:"char_login", modal:true, dialogClass:dlgClass, title:"Sign In",inline:true, width:"250px", closeOnEscape: false, resizable: false, coverall: true});
+        else
+            $("#char_login").dialog("open");
+    }
+    $('.ui-widget-overlay').addClass('login_form_overlay');
+    $('.login_form_notice').html(client.disconnect_reason);
+
+   if (($("#char_login .char_name").val() == "") && (getCookie("IRE.char_name") != ""))
+   {
+        $("#char_login .char_name").val(getCookie("IRE.char_name"));
+        $("#char_login .char_pass").focus();
+   }
+}
+
+function login(char_name, password, load_settings)
+{
+        if (char_name != null) char_name = char_name.trim();
+        client.charname = char_name;
+
+        var temp = {"name" : char_name, "password" : password};
+        client.load_settings = load_settings;
+
+        on_connect_mud = function () {
+            setTimeout(function () {
+                send_GMCP("Char.Login", temp);
+                gagged = false;
+            }, 500);
+        };
+
+        setCookie("IRE.char_name", char_name, 3650);
+
+        ws_connect(false);
+
+        $(".pass").val("");
+
+        $("#char_login").dialog("close");
+}
+
+function set_connected_mud()
+{
+    // clean scrollback if we are not relogging with the same character
+    if ((!client.last_charname.length) || (client.charname != client.last_charname))
+        $('.output, .output_scrollback').html('');
+    client.last_charname = client.charname;
+    connected_mud = true;
+    client.disconnect_reason = '';
+    client.set_default_settings();
+    $("#user_input").focus();
+    // start music in 5 seconds
+    // if settings load before that, music will start when they do as needed
+    window.setTimeout(function() { start_music(); }, 5000);
+}
+
+function set_disconnected_mud(show_login_dialog)
+{
+	connected_mud = false;
+
+    client.leave_fullscreen();
+    client.system_changed = false;
+    stop_music();
+    if (client.settings_window) { settings_window.close(); settings_window = undefined; }
+
+    if (arguments[0] == undefined || arguments[0] !== false) {
+        var reason = client.disconnect_reason;
+        if ((!reason) || (!reason.length)) reason = 'Connection has been closed.';
+        ow_Write("#output_main", "<span style='color: #ff0000;'>" + reason + "</span> <a href='javascript:void(0)' onclick='show_login()'>Click here to reconnect</a>.<br/>");
+    }
+
+    gagged = true;
+
+    if (client.connect_error) {
+        cm_alert('Unable to connect to the game. Please check your network configuration, or try again later.', { modal: true, close: function() { show_login(); } });
+        delete client.connect_error;
+    }
+
+    else if (typeof show_login_dialog == "undefined" || show_login_dialog !== false) {
+        if (client.disconnect_reason) cm_alert(client.disconnect_reason, { modal: true, close: function() { show_login(); } });
+        else show_login();
+    }
+    client.disconnect_reason = '';
+    ws = null;
+}
+
+var read_buffer = '';
+
+// these are not used by the client, they're for player scripts
+var current_block;
+var current_line;
+
+var handle_read = function (msgevent)
+{
+    var arry = msgevent.data;
+    arry = new Uint8Array(arry);  // convert to types array
+    var s = '';
+    for (var i = 0; i < arry.length; ++i)
+        s += String.fromCharCode(arry[i]);
+
+    read_data(s);
+}
+
+// This is in a separate function so that chrome can optimise things better.
+var handle_on_msg_recv = function(line)
+{
+    try {
+        $(document).trigger('onMsgRecv', [line]);
+    } catch (err)
+    {
+        print("<b style='color: red'>Error in a bound event:</b><br/>" + err);
+    }
+}
+
+var read_data = function (s)
+{
+    var str;
+
+    do {
+        // this appends the data to a temporary buffer and bails out
+        str = handle_telnet_read(s);
+        s = '';
+        if (str === false) break;
+        // this hides the initial welcome screen
+        if (gagged) continue;
+
+        var lines = telnet_split(str);
+        lines = parse_lines(lines);
+        if (lines === false) continue;
+        client.current_block = lines;
+
+        if (triggers_enabled) lines = handle_triggers(lines);
+
+        client.handle_beep_code(lines);
+
+        for (var idx = 0; idx < lines.length; ++idx) {
+            var temp = '';
+            if (lines[idx].line) temp = lines[idx].line;
+            else if (lines[idx].prompt) temp = lines[idx].prompt;
+            if (temp.length)
+                client.handle_on_msg_recv(temp);
+        }
+
+        run_function("onBlock", null, 'ALL');
+
+        client.display_text_block(lines);
+
+        client.current_line = undefined;
+        client.current_block = undefined;
+
+    } while (str !== false);
+}
+
+var has_pending_data = function() {
+    if (!client.ws) return 0;
+    return client.ws.bufferedAmount;
+}
+
+var display_text_block = function(lines) {
+    var block = generate_text_block(lines);
+    update_text_completion(lines);
+    if (block.length)
+        ow_Write("#output_main", block);
+}
+
+function display_notice(text, fg, bg)
+{
+    if ((!text) || (!text.length)) return;
+
+    bg = client.convert_bgcolor(bg);
+
+    var chunk = [];
+    chunk.push(linechunk_color(fg, bg));
+    chunk.push(linechunk_text(text));
+    var line = {};
+    line.parsed_line = linechunks_create(chunk);
+    line.no_triggers = true;
+
+    // if this is called inside a trigger, append the notice to the currently processed block
+    // otherwise show it right away
+    if (client.current_block) {
+        var idx = client.current_block.length;
+        if (client.current_line) idx = client.current_block.indexOf(client.current_line) + 1;
+        client.current_block.splice(idx, 0, line);
+    } else {
+        var lines = [];
+        lines.push(line);
+        client.display_text_block(lines);
+    }
+}
+
+function print(s)
+{
+    var color = "#ccc";
+    var bg_color = "transparent";
+    if (typeof arguments[1] != undefined)
+        color = arguments[1];
+
+    if (typeof arguments[2] != undefined)
+        bg_color = arguments[2];
+
+    ow_Write("#output_main", "<div style='color:"+color+ "; background:"+bg_color+"'>" + s + "</div>");
+}
+
+function print_nolog(s)
+{
+    var color = "#ccc";
+    var bg_color = "transparent";
+    if (typeof arguments[1] != undefined)
+        color = arguments[1];
+
+    if (typeof arguments[2] != undefined)
+        bg_color = arguments[2];
+
+    if (logging == true)
+    {
+        logging = false;
+        ow_Write("#output_main", "<div style='color:"+color+ "; background:"+bg_color+"'>" + s + "</div>");
+        logging = true;
+    } else {
+        ow_Write("#output_main", "<div style='color:"+color+ "; background:"+bg_color+"'>" + s + "</div>");
+    }
+}
+
+// This function was the main slowness cause with jQuery, so I'm rewriting it to use native selectors/DOM manipulation only.
+function ow_Write(selector, text)
+{
+    if (text.trim() == "") return;
+
+    // doing these updates asynchronously to minimize reflows when under heavy load
+    window.requestAnimationFrame(function() {
+        var hooks = $.cssHooks;
+        $.cssHooks = {};
+
+        var output = client.document.querySelectorAll(selector + ' .output')[0];
+        var newel = document.createElement('div');
+        newel.innerHTML = text;
+        newel.className = 'line';
+        newel.id = 'msg' + num_msgs;
+        output.appendChild(newel);
+
+        var scrollback = client.document.querySelectorAll(selector + ' .output_scrollback')[0];
+        newel = document.createElement('div');
+        newel.className = 'line';
+        newel.innerHTML = text;
+        newel.id = 'sb_msg' + num_msgs;
+        scrollback.appendChild(newel);
+
+        trim_ow(selector);
+
+        num_msgs++;
+        scrollback_num_msgs++;
+
+        if (selector === '#output_main') {
+           if (no_prompts || gag_prompts) {
+               var el = client.document.querySelectorAll('#output_main .prompt');
+               for (var i = 0; i < el.length; i++) el[i].style.display = 'none';
+               // last prompt shown?
+               if ((!no_prompts) && el.length > 0)
+                   el[el.length - 1].style.display = 'block';
+           }
+           if (show_timestamps) {
+               var el = client.document.querySelectorAll('#output_main .output #msg'+(num_msgs-1)+' .timestamp');
+               for (var i = 0; i < el.length; i++) el[i].classList.remove('no_out');
+           }
+           if (show_scroll_timestamps) {
+               var el = client.document.querySelectorAll('#output_main .output_scrollback #sb_msg'+(num_msgs-1)+' .timestamp');
+               for (var i = 0; i < el.length; i++) el[i].classList.remove('no_out');
+           }
+        }
+
+        output.scrollTop = output.scrollHeight;
+
+        $.cssHooks = hooks;
+    });
+
+}
+
+function trim_ow(selector)
+{
+    var output = $(selector +" .output div.line");
+    if (output.length > msg_limit)
+        output.slice(0, output.length - msg_limit).remove();
+
+    output = $(selector +" .output_scrollback div.line");
+    if (output.length >= scrollback_msg_limit)
+    {
+        var elem = output.slice(0, output.length - scrollback_msg_limit);
+        var h = 0;
+        elem.each(function() { h += $(this).height(); });
+        var scrollback = $(selector +" .output_scrollback");
+        var scroll = scrollback.scrollTop();
+        elem.remove();
+        scrollback.scrollTop(scroll - h);
+        scrollback.prop('spos', scrollback.prop("scrollTop"));
+    }
+}
+
+function send_feedback()
+{
+        if ($("#fb_feedback").val().trim() == "")
+        {
+            alert("Please enter your feedback before submitting.");
+            return false;
+        }
+
+        $.post("/send_feedback.php",
+              {fb_game:game,
+               fb_character:GMCP.Character.name,
+               fb_name:$("#fb_name").val(),
+               fb_email:$("#fb_email").val(),
+               fb_version: client.client_version,
+               fb_feedback:$("#fb_feedback").val()
+              },
+              function (data) {
+                  $("#fb_feedback").val("");
+                  print("Thank you for your feedback!", "red");
+                  $.colorbox.close();
+              }
+        );
+}
+
+var bval = function(x) {
+    return x ? 'true' : 'false';
+}
+
+var encode_system = function () {
+    client.custom_system = "// +++++ GENERAL OPTIONS +++++ //\n";
+
+    client.custom_system += "client.echo_input = " + bval(client.echo_input) + ";\n";
+    client.custom_system += "client.echo_target = " + bval(client.echo_target) + ";\n";
+    client.custom_system += "client.clear_input = " + bval(client.clear_input) + ";\n";
+    client.custom_system += "client.extra_break = " + bval(client.extra_break) + ";\n";
+    client.custom_system += "client.show_timestamps = " + bval(client.show_timestamps) + ";\n";
+    client.custom_system += "client.show_scroll_timestamps = " + bval(client.show_scroll_timestamps) + ";\n";
+    client.custom_system += "client.show_timestamp_milliseconds = " + bval(client.show_timestamp_milliseconds) + ";\n";
+    client.custom_system += "client.show_item_vnums = " + bval(client.show_item_vnums) + ";\n";
+    client.custom_system += "client.gag_comm = " + bval(client.gag_comm) + ";\n";
+    client.custom_system += "client.popups_help = " + bval(client.popups_help) + ";\n";
+    client.custom_system += "client.gag_prompts = " + bval(client.gag_prompts) + ";\n";
+    client.custom_system += "client.no_prompts = " + bval(client.no_prompts) + ";\n";
+    client.custom_system += "client.no_map_bg = " + bval(client.no_map_bg) + ";\n";
+    client.custom_system += "client.reverted = " + bval(client.reverted) + ";\n";
+    client.custom_system += "client.reduced_gauges = " + bval(client.reduced_gauges) + ";\n";
+    client.custom_system += "client.tooltips_disabled = " + bval(client.tooltips_disabled) + ";\n";
+    client.custom_system += "client.copy_on_mouseup = " + bval(client.copy_on_mouseup) + ";\n";
+    client.custom_system += "client.timestamps_in_logs = " + bval(client.timestamps_in_logs) + ";\n";
+    client.custom_system += "client.prepend_buffer_logs = " + bval(client.prepend_buffer_logs) + ";\n";
+
+    client.custom_system += "client.echo_gmcp = " + bval(client.echo_gmcp) + ";\n";
+    client.custom_system += "client.echo_triggers = " + bval(client.echo_triggers) + ";\n";
+    client.custom_system += "if (client.notifications) client.notifications.enabled = " + bval(client.notifications.enabled) + ";\n";
+    client.custom_system += "client.disable_button_keys = " + bval(client.disable_button_keys) + ";\n";
+    client.custom_system += "client.play_music = " + bval(client.play_music) + ";\n";
+
+    client.custom_system += 'client.color_inputecho = '+JSON.stringify(client.color_inputecho)+';'+"\n";
+    client.custom_system += 'client.color_targetecho = '+JSON.stringify(client.color_targetecho)+';'+"\n";
+    client.custom_system += 'client.color_gmcpecho = '+JSON.stringify(client.color_gmcpecho)+';'+"\n";
+    client.custom_system += 'client.color_trigecho = '+JSON.stringify(client.color_trigecho)+';'+"\n";
+
+    client.custom_system += "client.font_stack = " + JSON.stringify(client.font_stack) + ";\n";
+    client.custom_system += "client.font_size = " + JSON.stringify(client.font_size) + ";\n";
+    client.custom_system += "client.css_style = " + JSON.stringify(client.css_style) + ";\n";
+    client.custom_system += "client.stack_delimiter = " + JSON.stringify(client.stack_delimiter) + ";\n";
+    client.custom_system += "client.scrollback_msg_limit = parseInt(" + JSON.stringify(client.scrollback_msg_limit) + ");\n";
+    client.custom_system += "client.custom_colors = " + JSON.stringify(client.custom_colors) + ";\n";
+    client.custom_system += "client.custom_colors_reverted = " + JSON.stringify(client.custom_colors_reverted) + ";\n";
+    client.custom_system += "client.movement_compass = " + JSON.stringify(client.movement_compass) + ";\n";
+
+    client.custom_system += client.encode_objects();
+
+    client.custom_system += "client.load_all_reflex_packages();\n";
+
+    client.custom_system += "\n\n// +++++ LAYOUT INFO +++++ //\nclient.display_tabs = client.unstringify_display_tabs ? client.unstringify_display_tabs(" + client.stringify_display_tabs(client.display_tabs) + ") : undefined;\n\n";
+
+    return client.custom_system;
+};
+
+var encode_objects = function() {
+    var res = '';
+
+    res += "\n\n// +++++ VARIABLES +++++ //\nclient.vars = " + JSON.stringify(client.vars) + ";\n";
+
+    // stringify reflexes - we may need to do more work here later on if there's data that shouldn't be saved, but for now this'll do
+    res += "\n\n// +++++ REFLEXES +++++ //\nclient.reflexes = " + client.reflexes_export(client.reflexes) + ";\n";
+    res += "client.packages = " + client.reflexes_export(client.packages) + ";\nclient.reflexes_fix_parents();\n";
+    res += "client.reflexes_convert();\n";
+
+    // buttons
+    res += "\n\n// +++++ BUTTONS +++++ //\n client.buttons = " + JSON.stringify(client.buttons) + ";\n client.bottom_buttons_set_count(" + client.buttons_count + ");\n";
+
+    return res;
+}
+
+function export_system()
+{
+    client.encode_system();
+    var sys = unescape(encodeURIComponent(client.custom_system));
+    if (sys.length > 150000)   // big system files get compressed
+        sys = 'CHROMUD-INFLATE:' + pako.deflate(sys, { to: 'string' });
+    return btoa(sys);
+}
+
+var set_default_settings = function()
+{
+    client.custom_system = '';
+    client.echo_input = false;
+    client.echo_target = false;
+    client.clear_input = false;
+    client.extra_break = true;
+    client.show_timestamps = false;
+    client.show_scroll_timestamps = false;
+    client.show_timestamp_milliseconds = false;
+    client.show_item_vnums = false;
+    client.gag_comm = false;
+    client.popups_help = true;
+    client.gag_prompts = true;
+    client.no_prompts = true;
+    client.no_map_bg = false;
+    client.reverted = false;
+    client.reduced_gauges = true;
+    client.tooltips_disabled = false;
+    client.copy_on_mouseup = false;
+    client.timestamps_in_logs = false;
+    client.prepend_buffer_logs = false;
+    client.echo_gmcp = false;
+    client.echo_triggers = false;
+    if (client.notifications) client.notifications.enabled = false;
+    client.disable_button_keys = false;
+    client.play_music = true;
+
+    client.color_inputecho = '#999';
+    client.color_targetecho = '#0000ff';
+    client.color_gmcpecho = '#777';
+    client.color_trigecho = '#ff0000';
+
+    var style = getCookie("IRE.Style");
+    if (style && style.length) client.css_style = style;
+    else if (client.game == 'Starmourn') client.css_style = 'space';
+    else client.css_style = 'standard';
+
+    client.font_stack = 'Verdana';
+    client.font_size = '13px';
+    client.stack_delimiter = '|';
+    client.scrollback_msg_limit = 200;
+    client.custom_colors = [];
+    client.custom_colors_reverted = [];
+    client.movement_compass = 'mobile';
+
+    client.vars = new Object();
+
+    client.reflexes = {};
+    client.reflex_highest_id = -1;
+    client.reflex_package_highest_ids = {};
+
+    client.packages = [];
+
+    client.buttons = [];
+    client.default_buttons = [];
+    client.buttons_count = 6;
+    if (client.game == 'Achaea') client.buttons_count = 7;
+
+    if (client.create_default_reflex_packages) client.create_default_reflex_packages();
+    if (client.create_default_functions) client.create_default_functions();
+
+    // so we can override defaults on individual games
+    // the check needs to be there, as we call this function before everything is loaded
+    if (client.game_update_default_settings) game_update_default_settings();
+}
+
+set_default_settings();  // this is called in ready(), but some things break if I don't do it here too, for whatever reason
+
+
+var apply_settings = function()
+{
+    client.toggle_timestamps();
+    client.update_item_visibility();
+    client.toggle_font_stack();
+    client.update_fonts();
+    client.update_music();
+    client.apply_stylesheet();
+}
+
+var import_system = function(data)
+{
+    //client.custom_system = JSON.parse(atob(data));
+    data = data.replace(/\s/g, '');  // remove whitespace, atob chokes on it
+    var sys = atob(data);
+    if (sys.substr(0, 16) == 'CHROMUD-INFLATE:')  // compressed?
+        sys = pako.inflate(sys.substr(16), { to: 'string' });
+
+    client.custom_system = decodeURIComponent(escape(sys));
+
+    $.globalEval(client.custom_system);
+
+    setTimeout(function () {
+        client.reset_ui(false);
+        //client.redraw_interface()
+    }, 500);
+
+    client.reflexes_convert();
+    client.create_default_reflex_packages();
+    client.create_default_functions();
+
+    client.display_variables();
+    client.apply_settings();
+
+    if (client.settings_window && client.settings_window.update_all_tabs)
+        client.settings_window.update_all_tabs();
+
+    run_function("onLoad", undefined, 'ALL');
+}
+
+var toggle_wss = function () {
+    if (use_wss)
+    {
+        setCookie("IRE.WSS", "false", 3650);
+        use_wss = false;
+    } else {
+        setCookie("IRE.WSS", "true", 3650);
+        use_wss = true;
+    }
+}
+
+/* Various tools */
+function ucfirst (str) {
+    // Makes a string's first character uppercase
+    //
+    // version: 1109.2015
+    // discuss at: http://phpjs.org/functions/ucfirst
+    // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+    // +   bugfixed by: Onno Marsman
+    // +   improved by: Brett Zamir (http://brett-zamir.me)
+    // *     example 1: ucfirst('kevin van zonneveld');
+    // *     returns 1: 'Kevin van zonneveld'
+    str += '';
+    var f = str.charAt(0).toUpperCase();
+    return f + str.substr(1);
+}
+
+function htmlDecode(input){
+  var e = document.createElement('div');
+  e.innerHTML = input;
+  return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
+}
+
+function setCookie(c_name,value,exdays)
+{
+    var exdate=new Date();
+    exdate.setDate(exdate.getDate() + exdays);
+    var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+    document.cookie=c_name + "=" + c_value;
+}
+
+function getCookie(c_name)
+{
+    var x,y,ARRcookies=document.cookie.split(";");
+    for (var i=0;i<ARRcookies.length;i++)
+    {
+      x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+      y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+      x=x.replace(/^\s+|\s+$/g,"");
+      if (x==c_name)
+        {
+        return unescape(y);
+        }
+    }
+    return undefined;
+}
+
+function escapeRegExp(str) {
+  return str.replace(/[-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
+function getTimeNoMS()
+{
+    var today=new Date();
+    var h=today.getHours();
+    var m=today.getMinutes();
+    var s=today.getSeconds();
+
+    h=checkTime(h);
+    m=checkTime(m);
+    s=checkTime(s);
+
+    return h + ":" + m + ":" + s;
+}
+
+function getTimeMS()
+{
+    var today=new Date();
+    var h=today.getHours();
+    var m=today.getMinutes();
+    var s=today.getSeconds();
+    var ms = today.getMilliseconds();
+
+    h=checkTime(h);
+    m=checkTime(m);
+    s=checkTime(s);
+    ms=checkTimeMS(ms);
+
+    return h + ":" + m + ":" + s + "." + ms;
+}
+
+function checkTime(i)
+{
+    if (i<10)
+    {
+        i="0" + i;
+    }
+    return i;
+}
+
+function checkTimeMS(i)
+{
+    if (i<10)
+    {
+        i="00" + i;
+    } else if (i < 100)
+    {
+        i = "0" + i;
+    }
+    return i;
+}
+
+if(typeof String.prototype.trim !== 'function') {
+  String.prototype.trim = function() {
+    return this.replace(/^\s+|\s+$/g, '');
+  }
+}
+
+function fisherYatesShuffle ( myArray ) {
+  var i = myArray.length, j, tempi, tempj;
+  if ( i == 0 ) return false;
+  while ( --i ) {
+     j = Math.floor( Math.random() * ( i + 1 ) );
+     tempi = myArray[i];
+     tempj = myArray[j];
+     myArray[i] = tempj;
+     myArray[j] = tempi;
+   }
+}
+
+function debouncer( func , timeout ) {
+   var timeoutID , timeout = timeout || 200;
+   return function () {
+      var scope = this , args = arguments;
+      clearTimeout( timeoutID );
+      timeoutID = setTimeout( function () {
+          func.apply( scope , Array.prototype.slice.call( args ) );
+      } , timeout );
+   }
+}
+
+// Tab-expansion
+
+var tab_words = [];
+
+function setup_tab_expansion(input) {
+    input.on('keydown', function(e) {
+        var keyCode = e.keyCode || e.which;
+        if ((keyCode == 9) && e.shiftKey) {   // Shift+Tab is tab-completion
+            do_tab_expansion(this);
+            e.preventDefault();
+        } else
+            clear_tab_expansion(this);  // this means that expansion stops as soon as they release the modifier key
+    });
+    input.click(function() { clear_tab_expansion(this); });
+    input.focusout(function() { clear_tab_expansion(this); });
+}
+
+function words_for_tab_completion(prefix) {
+    var res = [];
+    prefix = prefix.toLowerCase();
+    for (var i = tab_words.length - 1; i >= 0; --i) {
+        for (var j = 0; j < tab_words[i].length; ++j) {
+            var word = tab_words[i][j];
+            if ((word.toLowerCase().substr(0, prefix.length) == prefix) && (res.indexOf(word) < 0))
+                res.push(word);
+        }
+    }
+    return res;
+}
+
+function do_tab_expansion(input) {
+    var pos = input.selectionStart;
+    var txt = input.value;
+    // if tab-expansion isn't ongoing, do that now
+    if (input.tabexp_start === undefined) {
+        // find the beginning of the word and grab the prefix
+        var start = pos;
+        while ((start > 0) && is_alphanumeric(txt.substr(start - 1, 1))) start--;
+        var prefix = txt.substr(start, pos - start);
+        if (prefix.length < 2) return;   // no expansion if we don't have at least two characters
+        var words = client.words_for_tab_completion(prefix);
+        if (!words.length) return;
+        input.tabexp_start = pos;
+        input.tabexp_choices = words;
+        input.tabexp_choice = 0;
+        input.tabexp_prefix = prefix;
+        input.tabexp_line_pre = txt.substr(0, start);
+        input.tabexp_line_post = txt.substr(pos);
+    }
+
+    // put in the new word
+    var idx = input.tabexp_choice;
+    var choice = input.tabexp_choices[idx];
+
+    idx++;
+    if (idx >= input.tabexp_choices.length) idx = 0;
+    input.tabexp_choice = idx;
+
+    txt = input.tabexp_line_pre + choice + input.tabexp_line_post;
+    input.value = txt;
+    input.selectionStart = input.selectionEnd = input.tabexp_line_pre.length + choice.length;
+}
+
+// clear stored tab expansion related info
+function clear_tab_expansion(input) {
+    if (!input) return;
+    delete input.tabexp_start;
+    delete input.tabexp_choices;
+    delete input.tabexp_choice;
+    delete input.tabexp_prefix;
+    delete input.tabexp_line_pre;
+    delete input.tabexp_line_post;
+}
+
+function update_text_completion(lines)
+{
+    for (var i = 0; i < lines.length; ++i) {
+        if (lines[i].gag) continue;
+        var l = lines[i].parsed_line;
+        if (!l) continue;
+        var text = l.text();
+        if ((!text) || (!text.length)) continue;
+        var chunks = text.split(' ');
+        var words = [];
+        for (var j = 0; j < chunks.length; ++j) {
+            var w = chunks[j].trim();
+            // trim everything not alphanumeric from beginning/end
+            while (w.length && (!is_alphanumeric(w.substr(0, 1)))) w = w.substr(1);
+            while (w.length && (!is_alphanumeric(w.substr(-1)))) w = w.substr(0, w.length - 1);
+            if (w.length && (words.indexOf(w) < 0)) words.push(w);
+        }
+        if (words.length) tab_words.push(words);
+        }
+    // obsolete old lines
+    while (tab_words.length > 40) tab_words.shift();
+}
+
+
+// End of Tab-expansion
+
+function supports_fullscreen() {
+    var el = document.documentElement;
+    if (el.requestFullscreen) return true;
+    if (el.msRequestFullscreen) return true;
+    if (el.mozRequestFullScreen) return true;
+    if (el.webkitRequestFullscreen) return true;
+    return false;
+}
+
+function is_fullscreen() {
+    if (!client.supports_fullscreen()) return false;
+
+    if (document.fullscreenElement ||    // alternative standard method
+            document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement)  // current working methods
+        return true;
+    return false;
+}
+
+function enter_fullscreen() {
+    if (!client.supports_fullscreen()) return;
+    if (client.is_fullscreen()) return;
+
+    var el = document.documentElement;
+    if (el.requestFullscreen) {
+        el.requestFullscreen();
+    } else if (el.msRequestFullscreen) {
+        el.msRequestFullscreen();
+    } else if (el.mozRequestFullScreen) {
+        el.mozRequestFullScreen();
+    } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+    }
+}
+
+function leave_fullscreen() {
+    if (!client.supports_fullscreen()) return;
+    if (!client.is_fullscreen()) return;
+
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+    }
+}
+
+function toggle_fullscreen() {
+    client.is_fullscreen() ? client.leave_fullscreen() : client.enter_fullscreen();
+}
+
+var get_download_url = function(data) {
+    if (data.length > 1536 * 1024) {
+        // chrome can't handle data above 2 MB, so let's re-route everything above 1.5MB to use blobs instead
+        var b = new Blob ([data], {type : 'text/plain'});
+        var url = URL.createObjectURL (b, 'text/plain');
+        window.setTimeout (function() { URL.removeObjectURL (url); }, 30 * 1000);
+        return url;
+    }
+
+    return 'data:text/plain;charset=utf-8,' + encodeURIComponent(data);
+}
+
+var do_download = function(data, fname) {
+    var url = client.get_download_url(data);
+    var pom = document.createElement('a');
+    pom.setAttribute('href', url);
+    pom.setAttribute('download', fname);
+    var pp = $('body')[0];
+    pp.appendChild(pom);   // needed for firefox
+    pom.click();
+    pp.removeChild(pom);
+}
+
+var setup_downloader = function(el, datafunc, fname) {
+    var running = false;
+    el.click(function(ev) {
+        ev.stopPropagation();
+        if (running) return;
+        running = true;   // because firefox is causing a loop with event propagation and I'm lazy
+        client.do_download(datafunc(), fname);
+        running = false;
+    } );
+}
+
+var handle_beep_code = function(lines) {
+    for (var idx = 0; idx < lines.length; idx++) {
+        if ((lines[idx].line) && lines[idx].line.indexOf(String.fromCharCode(7)) != -1) {
+            client.play_sound("sfx/beep 2", false, false, false);
+            document.title = "ALERT - " + client.GMCP.Character.name + " - " + game;
+            setTimeout(function() {
+                document.title = client.GMCP.Character.name + " - " + game;
+            }, 1000);
+            return;
+        }
+    }
+}
+
