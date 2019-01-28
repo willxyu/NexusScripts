@@ -1,36 +1,33 @@
-        if (gmcp_method == "Char.Name")
-        {
-            GMCP.Character = gmcp_args;
-            logged_in = true;
 
-            // Set the window title //
-            document.title = GMCP.Character.name + " - " + game;
+gmcpf = typeof gmcpf != 'undefined' || {}
 
-            $("#character_module_name").html(GMCP.Character.name);
+gmcpf.map = {
+  ['Char.Name']      : 'charname',
+  ['Char.StatusVars']: 'charsvars',
+  ['Char.Status']    : 'status',
+}
 
-            request_avatar();
+gmcpf.charname = function(data) {
+  GMCP.Character = data
+  logged_in      = true
+  document.title = GMCP.Character.name + ' - ' + game
+  $('#character_module_name').html(GMCP.Character.name)
+  request_avatar()
+  setTimeout( function() { if (client.load_settings) { gmcp_import_system() } }, 1000 )
+}
 
-            setTimeout(function () {
-                if (client.load_settings)
-                    gmcp_import_system();
-            }, 1000);
-        }
+gmcpf.charsvars = function(data) { GMCP.StatusVars = data }
 
-        if (gmcp_method == "Char.StatusVars")
-        {
-            GMCP.StatusVars = gmcp_args;
-        }
+gmcpf.status = function(data) {
+  if (GMCP.Status == null) { GMCP.Status = {} }
+  var s = data
+  for (var v in s) { GMCP.Status[v] = s[v] }
+  var status = GMCP.Status // [?delete]
+  client.draw_affdef_tab()
+}
 
-        if (gmcp_method == "Char.Status")
-        {
-            // the data can be partial, so don't replace what we have
-            if (GMCP.Status == null) GMCP.Status = {};
-            var s = gmcp_args;
-            for (v in s)
-                GMCP.Status[v] = s[v];
-            var status = GMCP.Status;
-            client.draw_affdef_tab();
-        }
+
+
 
         if (gmcp_method == "Char.Vitals")
         {
@@ -888,4 +885,40 @@
         {
             var pwd = gmcp_args;
             dropzone_kickoff(pwd);
+        }
+
+//
+
+        if (gmcp_method == "Char.Name")
+        {
+            GMCP.Character = gmcp_args;
+            logged_in = true;
+
+            // Set the window title //
+            document.title = GMCP.Character.name + " - " + game;
+
+            $("#character_module_name").html(GMCP.Character.name);
+
+            request_avatar();
+
+            setTimeout(function () {
+                if (client.load_settings)
+                    gmcp_import_system();
+            }, 1000);
+        }
+
+        if (gmcp_method == "Char.StatusVars")
+        {
+            GMCP.StatusVars = gmcp_args;
+        }
+
+        if (gmcp_method == "Char.Status")
+        {
+            // the data can be partial, so don't replace what we have
+            if (GMCP.Status == null) GMCP.Status = {};
+            var s = gmcp_args;
+            for (v in s)
+                GMCP.Status[v] = s[v];
+            var status = GMCP.Status;
+            client.draw_affdef_tab();
         }
