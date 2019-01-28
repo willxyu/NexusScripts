@@ -161,7 +161,17 @@ gmcpf.leanDefenceremove = function(data) {
   for (var i = 0; i < data.length; ++i) { delete GMCP.Defences[data[i]] } }
 
 
-
+$(document).on('onGMCP', function(data) {
+  if (typeof gmcpf == 'undefined') { return }
+  var addr = data[0]
+  var args = data[1]
+  if (typeof gmcpf.map[addr] != 'undefined') {
+    var fx = gmcpf.map[addr][gmcpf.map[addr].use]
+    if (typeof gmcpf[fx] != 'undefined') {
+      gmcpf[fx](args)
+    }
+  }
+})
 
 
 
