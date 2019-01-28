@@ -81,6 +81,12 @@ if (typeof client != 'undefined') {
         logged_in      = true
         setTimeout( function() { if (client.load_settings) { gmcp_import_system() } }, 1000)
       }
+      if (gmcp_method == 'IRE.Display.FixedFont') {
+        var res = {}
+            res.display_fixed_font = true
+            res.start = (gmcp_args == 'start')
+        return res
+      }
       // The rest of GMCP we will provide specific event control
       
       // 3 pre-existing bound behaviours
