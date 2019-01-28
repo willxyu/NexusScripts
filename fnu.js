@@ -33,23 +33,29 @@ if (typeof client != 'undefined') {
  client.read_data = function(s) {
    var str
    do {
-     str = client.handle_telnet_read(s); s = '';
+     str = client.handle_telnet_read(s)
+     s   = ''
      if (str === false)   { break }
      if (client.gagged)   { continue }
-     var lines = client.telnet_split(str); lines = client.parse_lines(lines);
+     var lines = client.telnet_split(str)
+         lines = client.parse_lines(lines)
      if (lines === false) { continue }
-     client.current_block = lines;
+     client.current_block = lines
      if (client.triggers_enabled) { lines = client.handle_triggers(lines) }
      client.handle_beep_code(lines)
      for (var idx = 0; idx < lines.length; ++idx) {
-       var temp = '';
-       if (lines[idx].line) { temp = lines[idx].line }
-       else if (lines[idx].prompt) { temp = lines[idx].prompt }
+       var temp = ''
+       if (lines[idx].line) {
+         temp = lines[idx].line
+       } else if (lines[idx].prompt) {
+         temp = lines[idx].prompt
+       }
        if (temp.length) { client.handle_on_msg_recv(temp) }
      }
      client.run_function('onBlock', null, 'ALL')
      client.display_text_block(lines)
-     client.current_line = undefined; client.current_block = undefined;
+     client.current_line = undefined
+     client.current_block = undefined
    } while (str !== false)
  }
 }
@@ -59,13 +65,22 @@ if (typeof ws != 'undefined') { ws.onmessage = client.handle_read }
 //   We are going to reduce Nexus' independent GMCP handling & provide specific event control for users, but also provide internal templates
 if (typeof client != 'undefined') {
  client.handle_GMCP = function(data) {
-    var gmcp_fire_event = false; var gmcp_event_param = '';
+    var gmcp_fire_event  = false
+    var gmcp_event_param = ''
     if (data.GMCP) {
-      if (client.echo_gmcp) { print('[GMCP: ' + data.GMCP.method + ' ' + data.GMCP.args, client.color_gmcpecho) };
-      var gmcp_method = data.GMCP.method; var gmcp_args = data.GMCP.args;
+      if (client.echo_gmcp) { print('[GMCP: ' + data.GMCP.method + ' ' + data.GMCP.args, client.color_gmcpecho) }
+      var gmcp_method = data.GMCP.method
+      var gmcp_args   = data.GMCP.args
       if (gmcp_args.length == 0) { gmcp_args = "''" }
       gmcp_args = JSON.parse(gmcp_args)
+      
       if (gmcp_method == 'Core.Ping') { if (GMCP.PingStart) { GMCP.PingTime = new Date().getTime() - GMCP.PingStart }; GMCP.PingStart = null }
+
+      if (gmcp_method == 'Char.Name') {
+        GMCP.Character = gmcp_args
+        logged_in      = true
+        setTimeout( function() { if (client.load_settings) { gmcp_import_system() } }, 1000)
+      }
       // The rest of GMCP we will provide specific event control
       
       // 3 pre-existing bound behaviours
