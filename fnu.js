@@ -22,7 +22,7 @@ fnu.utils = (function() {
   }
 })()
 
-// Client Overwrites
+// Client Overwrites/Intercepts
 if (typeof client != 'undefined') {
  client.handle_read = function(msg) {
    var arr = new Uint8Array(msg.data)
@@ -53,6 +53,25 @@ if (typeof client != 'undefined') {
    } while (str !== false)
  }
 }
-
 if (typeof ws != 'undefined') { ws.onmessage = client.handle_read }
+
+// GMCP Murder, handle_GMCP < telnet_split (line 6 of client.read_data)
+//   We are going to reduce Nexus' independent GMCP handling & provide specific event control for users, but also provide internal templates
+if (typeof client != 'undefined') {
+ client.handle_GMCP = function(data) {
+    var gmcp_fire_event = false; var gmcp_event_param = '';
+    if (data.GMCP) {
+      if (client.echo_gmcp) { print('[GMCP: ' + data.GMCP.method + ' ' + data.GMCP.args, client.color_gmcpecho) };
+      var gmcp_method = data.GMCP.method; var gmcp_args = data.GMCP.args;
+      if (gmcp_args.length == 0) { gmcp_args = "''" }
+      gmcp_args = JSON.parse(gmcp_args)
+      if (gmcp_method == 'Core.Ping') { if (GMCP.PingStart) { GMCP.PingTime = new Date().getTime() - GMCP.PingStart }; GMCP.PingStart = null }
+      // The rest of GMCP we will provide specific event control
+      
+      // 3 pre-existing bound behaviours
+      $(document).trigger('onGMCP', [gmcp_method, gmcp_args])
+      run_function('onGMCP', {'gmcp_method': gmcp_method, 'gmcp_args': gmcp_args}, 'ALL')
+      if (gmcp_fire_event) { client.handle_event('GMCP', gmcp_method, gmcp_event_param)
+ }
+}
 
