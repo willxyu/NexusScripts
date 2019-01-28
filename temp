@@ -2,12 +2,16 @@
 gmcpf = typeof gmcpf != 'undefined' || {}
 
 gmcpf.map = {
-  ['Char.Name']          : {use: 'original', original: 'charname',    lean: 'leanCharname'},
-  ['Char.StatusVars']    : {use: 'original', original: 'charsvars',   lean: 'leanCharsvars'},
-  ['Char.Status']        : {use: 'original', original: 'status',      lean: 'leanStatus'},
-  ['Char.Vitals']        : {use: 'original', original: 'vitals',      lean: 'leanVitals'},
-  ['Char.Skills.Groups'] : {use: 'lean',     original: 'skillgroups', lean: 'leanSkillgroups'},
-  ['Char.Skills.List']   : {use: 'original', original: 'skillList',   lean: 'leanSkillList'},
+  ['Char.Name']               : {use: 'original', original: 'charname',         lean: 'leanCharname'},
+  ['Char.StatusVars']         : {use: 'original', original: 'charsvars',        lean: 'leanCharsvars'},
+  ['Char.Status']             : {use: 'original', original: 'status',           lean: 'leanStatus'},
+  ['Char.Vitals']             : {use: 'original', original: 'vitals',           lean: 'leanVitals'},
+  ['Char.Skills.Groups']      : {use: 'lean',     original: 'skillgroups',      lean: 'leanSkillgroups'},
+  ['Char.Skills.List']        : {use: 'original', original: 'skillList',        lean: 'leanSkillList'},
+  ['Char.Skills.Info']        : {use: 'original', original: 'skillinfo',        lean: 'leanSkillinfo'},
+  ['Char.Afflictions.List']   : {use: 'lean',     original: 'afflictionlist',   lean: 'leanAfflictionlist'},
+  ['Char.Afflictions.Add']    : {use: 'lean',     original: 'afflictionadd',    lean: 'leanAfflictionadd'},
+  ['Char.Afflictions.Remove'] : {use: 'lean',     original: 'afflictionremove', lean: 'leanAfflictionremove'},
 }
 
 gmcpf.charname = function(data) {
@@ -87,58 +91,58 @@ gmcpf.skillList = function(data) {
   }
 }
 
+gmcpf.skillinfo = function(data) {
+  var dsl = $('<div/>')
+  var div = '<div id=\'group_skills_skill\' class=\'\' title=\'' + ucfirst(data.skill) + '\' style=\'font-size: 0.8em;\'>'
+  if (data.info != '') {
+    div += '<p>' + client.escape_html(data.info).replace(/\n/g,'<br />') + '</p>'
+  } else {
+    div += '<p>You have not yet learned that ability.</p>'
+  }
+  dsl.append(div)
+  cm_dialog('#', {id: 'skill_info', top_align: 40, title: ucfirst(data.skill), width: ($('#container').width() * 0.5), height: ($('#container').height() * 0.5), content: dsl })
+}
+
+gmcpf.afflictionlist = function(data) {
+  GMCP.Afflictions = {}
+  for (var i = 0; i < data.length; ++i) {
+    var aff = data[i]
+    GMCP.Afflictions[aff.name] = aff
+  }
+  client.draw_affdef_tab()
+}
+
+gmcpf.afflictionadd = function(data) {
+  var aff = data
+  GMCP.Afflictions[data.name] = data
+  client.draw_affdef_tab()
+  // ? client.handle_event('GMCP', 'Char.Afflictions.Add', data)
+}
+
+gmcpf.afflictionremove = function(data) {
+  for (var i = 0; i < data.length; ++i) {
+    delete GMCP.Afflictions[data[i]]
+  }
+  client.draw_affdef_tab()
+  // ? client.handle_event('GMCP', 'Char.Afflictions.Add', data)
+}
 
 // Lean Section
 gmcpf.leanSkillgroups = function(data) { }
 
+gmcpf.leanAfflictionlist = function(data) {
+  GMCP.Afflictions = {}
+  for (var i = 0; i < data.length; ++i) {
+    var aff = data[i]
+    GMCP.Afflictions[aff.name] = aff
+  }
+}
+gmcpf.leanAfflictionadd = function(data) { GMCP.Afflictions[data.name] = data }
+gmcpf.leanAfflictionremove = function(data) {
+  for (var i = 0; i < data.length; ++i) { delete GMCP.Afflictions[data[i]] } }
 
 
-        if (gmcp_method == "Char.Skills.Info")
-        {
-            var dsl = $("<div/>");
 
-            var div = "<div id=\"group_skills_skill\" class=\"\" title=\"" + ucfirst(gmcp_args.skill) + "\" style=\"font-size:.8em;\">";
-
-            if(gmcp_args.info != "")
-            {
-                div += "<p>" + client.escape_html(gmcp_args.info).replace(/\n/g,"<br />") + "</p>";
-            } else {
-
-                div += "<p>You have not yet learned that ability.</p>";
-
-            }
-
-            dsl.append(div);
-
-                cm_dialog("#", {id: "skill_info", top_align: 40, title: ucfirst(gmcp_args.skill), width: ($("#container").width() * .5), height: ($("#container").height() * .5), content: dsl});
-        }
-
-        if (gmcp_method == "Char.Afflictions.List") {
-            GMCP.Afflictions = {};
-            for (var i = 0; i < gmcp_args.length; ++i) {
-                var aff = gmcp_args[i];  // this has keys: name, cure, desc
-                GMCP.Afflictions[aff.name] = aff;
-            }
-            client.draw_affdef_tab();
-        }
-
-        if (gmcp_method == "Char.Afflictions.Add") {
-            var aff = gmcp_args;
-            GMCP.Afflictions[aff.name] = aff;
-            client.draw_affdef_tab();
-
-            gmcp_fire_event = true;
-            gmcp_event_param = aff;
-        }
-
-        if (gmcp_method == "Char.Afflictions.Remove") {
-            for (var i = 0; i < gmcp_args.length; ++i)
-              delete GMCP.Afflictions[gmcp_args[i]];
-            client.draw_affdef_tab();
-
-            gmcp_fire_event = true;
-            gmcp_event_param = aff;
-        }
 
         if (gmcp_method == "Char.Defences.List") {
             GMCP.Defences = {};
@@ -989,4 +993,53 @@ gmcpf.leanSkillgroups = function(data) { }
 
                 GMCP.WaitingForSkills = false;
             }
+        }
+        
+        if (gmcp_method == "Char.Skills.Info")
+        {
+            var dsl = $("<div/>");
+
+            var div = "<div id=\"group_skills_skill\" class=\"\" title=\"" + ucfirst(gmcp_args.skill) + "\" style=\"font-size:.8em;\">";
+
+            if(gmcp_args.info != "")
+            {
+                div += "<p>" + client.escape_html(gmcp_args.info).replace(/\n/g,"<br />") + "</p>";
+            } else {
+
+                div += "<p>You have not yet learned that ability.</p>";
+
+            }
+
+            dsl.append(div);
+
+                cm_dialog("#", {id: "skill_info", top_align: 40, title: ucfirst(gmcp_args.skill), width: ($("#container").width() * .5),
+                height: ($("#container").height() * .5), content: dsl});
+        }
+        
+        if (gmcp_method == "Char.Afflictions.List") {
+            GMCP.Afflictions = {};
+            for (var i = 0; i < gmcp_args.length; ++i) {
+                var aff = gmcp_args[i];  // this has keys: name, cure, desc
+                GMCP.Afflictions[aff.name] = aff;
+            }
+            client.draw_affdef_tab();
+        }
+
+
+        if (gmcp_method == "Char.Afflictions.Add") {
+            var aff = gmcp_args;
+            GMCP.Afflictions[aff.name] = aff;
+            client.draw_affdef_tab();
+
+            gmcp_fire_event = true;
+            gmcp_event_param = aff;
+        }
+
+        if (gmcp_method == "Char.Afflictions.Remove") {
+            for (var i = 0; i < gmcp_args.length; ++i)
+              delete GMCP.Afflictions[gmcp_args[i]];
+            client.draw_affdef_tab();
+
+            gmcp_fire_event = true;
+            gmcp_event_param = aff;
         }
