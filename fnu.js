@@ -63,7 +63,8 @@ if (typeof ws != 'undefined') { ws.onmessage = client.handle_read }
 
 // GMCP Murder, handle_GMCP < telnet_split (line 6 of client.read_data)
 //   We are going to reduce Nexus' independent GMCP handling & provide specific event control for users, but also provide internal templates
-if (typeof client != 'undefined') { client.handle_GMCP = function(data) {
+if (typeof client != 'undefined') {
+  client.handle_GMCP = function(data) {
     var gmcp_fire_event  = false
     var gmcp_event_param = ''
     if (data.GMCP) {
@@ -86,6 +87,7 @@ if (typeof client != 'undefined') { client.handle_GMCP = function(data) {
       $(document).trigger('onGMCP', [gmcp_method, gmcp_args])
       run_function('onGMCP', {'gmcp_method': gmcp_method, 'gmcp_args': gmcp_args}, 'ALL')
       if (gmcp_fire_event) { client.handle_event('GMCP', gmcp_method, gmcp_event_param) }
+    }
  }
 }
 
