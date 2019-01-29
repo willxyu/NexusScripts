@@ -15,6 +15,22 @@ gmcpf.map = {
   ['Char.Defences.List']      : {use: 'lean',     original: 'defencelist',      lean: 'leanDefencelist'},
   ['Char.Defences.Add']       : {use: 'lean',     original: 'defenceadd',       lean: 'leanDefenceadd'},
   ['Char.Defences.Remove']    : {use: 'lean',     original: 'defenceremove',    lean: 'leanDefenceremove'},
+  ['Room.AddPlayer']          : {use: 'original', original: 'roomAddplayer',    lean: 'leanRoomAddplayer'},
+  ['Room.RemovePlayer']       : {use: 'original', original: 'roomRemoveplayer', lean: 'leanRoomRemoveplayer'},
+  ['Room.Players']            : {use: 'original', original: 'roomplayers',      lean: 'leanRoomplayers'},
+  ['Char.Items.Add']          : {use: 'original', original: 'charAdditems',     lean: 'leanCharAdditems'},
+}
+
+gmcpf.init = function() {
+  for (var k in gmcpf.map) {
+    let m = gmcpf.map[k]
+    $(document).off('gmcp-' + k)
+    $(document).on('gmcp-' + k, function(data) {
+      if (typeof gmcpf[m[m.use]] == 'function') {
+        gmcpf[m[m.use]](data) 
+      }
+    })
+  }
 }
 
 gmcpf.charname = function(data) {
@@ -140,7 +156,38 @@ gmcpf.defenceremove = function(data) {
   }
   client.draw_affdef_tab()
   client.handle_event('GMCP', 'Char.Afflictions.Add', data) }
-        
+
+gmcpf.roomAddplayer = function(data) {
+  if (data.name != GMCP.Character.name) {
+    var name = data.name.toLowerCase()
+    $('#div_room_players #' + name).remove()
+    $('#div_room_players).append('<p class=\'no_border item\' id=\'' + name + '\'><span class=\'item_icon\'></span><span class=\'player_name\'>' + data.fullname + '</span></p>')
+    client.handle_event('GMCP', 'Room.AddPlayer', data.name) 
+  } }
+
+gmcpf.roomRemoveplayer = function(data) {
+  var name = data.toLowerCase()
+  $('#div_room_players #' + name).remove()
+  client.handle_event('GMCP', 'Room.RemovePlayer', data) }
+
+gmcpf.roomplayers = function(data) {
+  setTimeout(function() {
+    $('#div_room_players').html('')
+    for (var k in data) {
+     if (data[k].name.toLowerCase() != GMCP.Character.name.toLowerCase()) {
+       var html = '<p class=\'no_border item\' id=\'' + data[k].name.toLowerCase() + '\'><span class=\'item_icon\'></span><span class=\'player_name\'>' + data[k].fullname + '</span>'
+       $('#div_room_players').append(html)
+     }
+    }
+  }, 0) }
+
+gmcpf.charAdditems = function(data) {
+  var div_id = itemlist_divid( data.location, data.item )
+  if (div_id == null) { return }
+  $(div_id).append( itemlist_entry(data.item) )
+  itemlist_events( data.item )
+  update_item_visibility() }
+
 // Lean Section
 gmcpf.leanSkillgroups = function(data) { }
 
@@ -160,70 +207,11 @@ gmcpf.leanDefenceadd = function(data) { GMCP.Defences[data.name] = data }
 gmcpf.leanDefenceremove = function(data) {
   for (var i = 0; i < data.length; ++i) { delete GMCP.Defences[data[i]] } }
 
-
-$(document).on('onGMCP', function(data) {
-  if (typeof gmcpf == 'undefined') { return }
-  var addr = data[0]
-  var args = data[1]
-  if (typeof gmcpf.map[addr] != 'undefined') {
-    var fx = gmcpf.map[addr][gmcpf.map[addr].use]
-    if (typeof gmcpf[fx] != 'undefined') {
-      gmcpf[fx](args)
-    }
-  }
-})
+gmcpf.init()
 
 
 
 
-
-
-
-        if (gmcp_method == "Room.AddPlayer")
-        {
-            if (gmcp_args.name != GMCP.Character.name)
-            {
-                var name = gmcp_args.name.toLowerCase();
-                $("#div_room_players #" + name).remove();  // because the remove msg sometimes isn't sent
-                $("#div_room_players").append("<p class=\"no_border item\" id=\"" + name + "\"><span class=\"item_icon\"></span><span class=\"player_name\">" + gmcp_args.fullname + "</span></p>");
-            
-                gmcp_fire_event = true;
-                gmcp_event_param = gmcp_args.name;
-            }
-        }
-
-        if (gmcp_method == "Room.RemovePlayer")
-        {
-            var name = gmcp_args.toLowerCase();
-            $("#div_room_players #" + name).remove();
-            gmcp_fire_event = true;
-            gmcp_event_param = gmcp_args;
-        }
-
-        if (gmcp_method == "Room.Players")
-        {
-            setTimeout(function () {
-                $("#div_room_players").html("");
-
-                for (var i in gmcp_args)
-                {
-                    if (gmcp_args[i].name.toLowerCase() != GMCP.Character.name.toLowerCase()) {
-                        var html = "<p class=\"no_border item\" id=\"" + gmcp_args[i].name.toLowerCase() + "\"><span class=\"item_icon\"></span><span class=\"player_name\">" + gmcp_args[i].fullname + '</span>';
-                        html += "</p>";
-                        $("#div_room_players").append(html);
-                     }
-                }
-            }, 0);
-        }
-
-        if (gmcp_method == "Char.Items.Add")
-        {
-            var div_id = itemlist_divid(gmcp_args.location, gmcp_args.item);
-            if (div_id == null) return;
-            $(div_id).append(itemlist_entry(gmcp_args.item));
-            itemlist_events(gmcp_args.item);
-            update_item_visibility();
-        }
 
         if (gmcp_method == "Char.Items.Update")
         {
