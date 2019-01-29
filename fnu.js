@@ -87,6 +87,21 @@ if (typeof client != 'undefined') {
             res.start = (gmcp_args == 'start')
         return res
       }
+      if (gmcp_method == "IRE.FileStore.Content") {
+         var file = gmcp_args;
+         if (file.name && file.name == "raw_refresh") {
+           if (file.text != "") { import_system(file.text) }
+           $.colorbox.close();
+         } else if (file.name && file.name == "raw") {
+           if (file.text != "") { import_system(file.text) }
+         }
+      }
+      if (gmcp_method == "IRE.FileStore.List") {
+         var list = gmcp_args;
+         if (client.settings_window && client.settings_window.process_filelist)
+             client.settings_window.process_filelist (list);
+      }
+
       // The rest of GMCP we will provide specific event control
       $(document).trigger('gmcp-' + gmcp_method, [gmcp_args])
       $(document).trigger('gmcp-' + gmcp_method + '-user', [gmcp_args])
