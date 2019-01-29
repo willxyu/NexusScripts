@@ -29,6 +29,13 @@ gmcpf.map = {
   ['IRE.Display.HidePopup']    : {use: 'original', original: 'ireDisplayhidepopup',  lean: 'leanIreDisplayhidepopup'  },
   ['IRE.Display.HideAllPopups']: {use: 'original', original: 'ireDisplayhidepopups', lean: 'leanIreDisplayhidepopups' },
   ['IRE.Display.Popup']        : {use: 'original', original: 'ireDisplaypopup',      lean: 'leanIreDisplaypopup'      },
+  ['IRE.Display.Ohmap']        : {use: 'original', original: 'ireDisplayohmap',      lean: 'leanIreDisplayohmap'      },
+  ['IRE.Display.ButtonActions']: {use: 'original', original: 'ireDisplaybActions',   lean: 'leanIreDisplaybActions'   },
+  ['Comm.Channel.Start']       : {use: 'original', original: 'commChannstart',       lean: 'leanCommChannstart'       },
+  ['Comm.Channel.End']         : {use: 'original', original: 'commChannend',         lean: 'leanCommChannend'         },
+  ['Comm.Channel.Text']        : {use: 'original', original: 'commChanntext',        lean: 'leanCommChanntext'        },
+  ['Comm.Channel.List']        : {use: 'original', original: 'commChannlist',        lean: 'leanCommChannlist'        },
+  ['Comm.Channel.Players']     : {use: 'original', original: 'commChannplayers',     lean: 'leanCommChannplayers'     },
 }
 
 gmcpf.init = function() {
@@ -300,6 +307,95 @@ gmcpf.ireDisplayhidepopups = function(data) { $('.popup').fadeOut({ complete: fu
 gmcpf.ireDisplaypopup = function(data) {
   client.display_gmcp_popup( data.id, data.element, data.src, $('<p/>').html(data.text), data.options, data.commands, data.allow_noshow) }
 
+gmcpf.ireDisplayohmap = function(data) {
+  if (!client.map_enabled()) { return }
+  var res = {}
+      res.ohmap = true
+      res.start = (data == 'start')
+  return res }
+  
+gmcpf.ireDisplaybActions = function(data) { bottom_buttons_set_defaults(data) }
+
+gmcpf.commChannstart = function(data) {
+  var res = {}
+      res.channel = data
+      res.start = true
+  return res }
+  
+gmcpf.commChannend = function(data) {
+  var res = {}
+      res.channel = data
+      res.start = false
+  return res }
+ 
+gmcpf.commChanntext = function(data) {
+  var chann = data.channel
+  var text = data.text
+      text = parse_and_format_line(text)
+  write_channel(chann, text)
+  notifications_channel_text(chann, text, data.talker) }
+
+gmcpf.commChannlist = function(data) {
+  GMCP.ChannelList = data
+  setTimeout(function() {
+    $('#div_channels').html('')
+    for (var k in GMCP.ChannelList) {
+     $('#div_channels').append('<p class=\'no_border item\' style=\'padding: 5px; cursor: pointer\' name=\'' + GMCP.ChannelList[k].name + '\' caption=\'' + GMCP.ChannelList[k].caption + '\' command=\'' + GMCP.ChannelList[k].command + '\'>' + ucfirst(GMCP.ChannelList[k].caption) + '</p>')
+    }
+    $('#div_channels > .item').click(function() {
+      if ($(this).hasClass('bg_medium')) { clear = true } else { clear = false }
+      $('#div_channels > .item').removeClass('bg_medium')
+      $('#div_channels > .buttons').remove()
+      if (!clear) {
+       $(this).addClass('bg_medium')
+       var name = $(this).attr('name')
+       var caption = $(this).attr('caption')
+       var command = $(this).attr('command')
+       $(this).after('<p class=\'buttons txt_center\' style=\'font-size: 0.9em;\'>' +
+                     '<button class=\'open_channel\' name=\'' + name + '\' caption=\'' + caption + '\' command=\'' + command + '\'>Open Channel</button>' + '</p>')
+       $('#div_channels > .buttons > button.open_channel').button().click(function() { open_channel($(this).attr('name'), $(this).attr('caption'), $(this).attr('command')) })
+      }
+    })
+  }, 0) }
+
+gmcpf.commChannplayers = function(data) {
+  setTimeout(function() {
+    GMCP.WhoList = data
+    GMCP.WhoList.sort(function(a, b) {
+      if (a.name < b.name) { return -1 }
+      if (a.name > b.name) { return  1 }
+      return 0
+    })
+    $('#div_who_channels').html('<p class=\'no_border bg_medium who_channel\' style=\'padding: 5px; cursor: pointer\'>All Players</p>')
+    $('#div_who_players').html('')
+    var channels = []
+    for (var k in GMCP.WhoList) {
+      if (GMCP.WhoList[k].channels) {
+        for (var j in GMCP.WhoList[k].channels) {
+          if ($.inArray(GMCP.WhoList[k].channels[j], channels) == -1) { channels.push(GMCP.WhoList[k].channels[j]) }
+        }
+      }
+      $('#div_who_players').append('<p class=\'no_border who_name\' style=\'padding: 2px 5px; cursor:pointer\'>' + GMCP.WhoList[k].name + '</p>')
+    }
+    $('#div_who_players > .who_name').click(function() { send_direct('honours ' + $(this).html()) })
+    channels.sort()
+    for (var k in channels) {
+      $('#div_who_channels').append('<p class=\'no_border who_channel\' style=\'padding: 5px; cursor: pointer\' who_channel=\'' + channels[k] + '\'>' + ucfirst(channels[k]) + '</p>') 
+    }
+    $('#div_who_channels > .who_channel').click(function() {
+      if ($(this).hasClass('bg_medium')) { clear = true } else { clear = false }
+      $('#div_who_channels > .who_channel').removeClass('bg_medium')
+      $(this).addClass('bg_medium')
+      $('#div_who_players').html('')
+      for (var k in GMCP.WhoList) {
+        if ($(this).html() == 'All Players' || (GMCP.WhoList[k].channels && $.inArray($(this).attr('who_channel'), GMCP.WhoList[k].channels) > -1)) {
+          $('#div_who_players').append('<p class=\'no_border who_name\' style=\'padding: 2px 5px; cursor: pointer\'>' + GMCP.WhoList[k].name + '</p>') 
+        }
+      }
+      $('#div_who_players > .who_name').click(function() { send_direct('honours ' + $(this).html()) })
+    })
+  }, 0) }
+
 // Lean Section
 gmcpf.leanSkillgroups = function(data) { }
 
@@ -321,189 +417,10 @@ gmcpf.leanDefenceremove = function(data) {
 
 gmcpf.init()
 
-  
 
-        if ((gmcp_method == "IRE.Display.Ohmap") && client.map_enabled())
-        {
-            var res = {};
-            res.ohmap = true;
-            res.start = (gmcp_args == "start");
-            return res;
-        }
 
-        if (gmcp_method == "IRE.Display.ButtonActions")
-        {
-            bottom_buttons_set_defaults(gmcp_args);
-        }
 
-        if (gmcp_method == "Comm.Channel.Start")
-        {
-            var res = {};
-            res.channel = gmcp_args;
-            res.start = true;
-            return res;
-        }
-        if (gmcp_method == "Comm.Channel.End")
-        {
-            var res = {};
-            res.channel = gmcp_args;
-            res.start = false;
-            return res;
-        }
 
-        if (gmcp_method == "Comm.Channel.Text")
-        {
-            var channel = gmcp_args.channel;
-            var text = gmcp_args.text;
-            text = parse_and_format_line(text);
-            write_channel(channel, text);
-            notifications_channel_text(channel, text, gmcp_args.talker);
-        }
-
-        if (gmcp_method == "Comm.Channel.List")
-        {
-            GMCP.ChannelList = gmcp_args;
-
-            setTimeout(function() {
-                $("#div_channels").html("");
-
-                for (var i in GMCP.ChannelList)
-                {
-                    $("#div_channels").append("<p class=\"no_border item\" style=\"padding: 5px; cursor:pointer\" name=\"" + GMCP.ChannelList[i].name + "\" caption=\"" + GMCP.ChannelList[i].caption + "\" command=\"" + GMCP.ChannelList[i].command + "\">" + ucfirst(GMCP.ChannelList[i].caption) + "</p>");
-                }
-
-                $("#div_channels > .item").click(function() {
-                    if ($(this).hasClass("bg_medium")) clear = true; else clear = false;
-
-                    $("#div_channels > .item").removeClass("bg_medium");
-                    $("#div_channels > .buttons").remove();
-
-                    if (!clear)
-                    {
-                        $(this).addClass("bg_medium");
-
-                        var name = $(this).attr("name");
-                        var caption = $(this).attr("caption");
-                        var command = $(this).attr("command");
-
-                        $(this).after("<p class=\"buttons txt_center\" style=\"font-size: .9em;\">" +
-                                        "<button class=\"open_channel\" name=\"" + name + "\" caption=\"" + caption + "\" command=\"" + command + "\">Open Channel</button>" +
-                                      "</p>");
-                        $("#div_channels > .buttons > button.open_channel").button().click(function() {open_channel($(this).attr("name"),$(this).attr("caption"),$(this).attr("command"));});
-                    }
-                });
-            },0);
-        }
-
-        if (gmcp_method == "Comm.Channel.Players")
-        {
-            setTimeout(function () {
-                GMCP.WhoList = gmcp_args;
-
-                GMCP.WhoList.sort(function (a,b) {
-                    if (a.name < b.name)
-                        return -1;
-                    if (a.name > b.name)
-                        return 1;
-                    return 0;
-                });
-
-                $("#div_who_channels").html("<p class=\"no_border bg_medium who_channel\" style=\"padding: 5px; cursor:pointer\">All Players</p>");
-                $("#div_who_players").html("");
-
-                var channels = [];
-
-                for (var i in GMCP.WhoList)
-                {
-                    if (GMCP.WhoList[i].channels)
-                    {
-                        for (var j in GMCP.WhoList[i].channels)
-                        {
-                            if ($.inArray(GMCP.WhoList[i].channels[j], channels) == -1)
-                                channels.push(GMCP.WhoList[i].channels[j])
-                        }
-                    }
-
-                    $("#div_who_players").append("<p class=\"no_border who_name\" style=\"padding: 2px 5px; cursor:pointer\">" + GMCP.WhoList[i].name + "</p>");
-                }
-
-                $("#div_who_players > .who_name").click(function() {
-                    var name = $(this).html();
-                    send_direct('honours ' + name);
-/*
-                    if ($(this).hasClass("bg_medium")) clear = true; else clear = false;
-
-                    $("#div_who_players > .who_name").removeClass("bg_medium");
-                    $("#div_who_players > .buttons").remove();
-
-                    if (!clear)
-                    {
-                        $(this).addClass("bg_medium");
-                        var name = $(this).html();
-
-                        $(this).after("<p class=\"buttons txt_center\">" +
-                                        "<button class=\"send\" rel=\"honours " + name + "\">Honors</button>" +
-                                        //"<button class=\"open_channel\"  name=\"Chat with " + name + "\" caption=\"Chat with " + name + "\" command=\"tell " + name + "\">Chat</button>" +
-                                      "</p>");
-                        $("#div_who_players > .buttons > button.send").button().click(function() {send_direct($(this).attr("rel"), true);});
-                        $("#div_who_players > .buttons > button.open_channel").button().click(function() {open_channel($(this).attr("name"),$(this).attr("caption"),$(this).attr("command"));});
-                    }
-*/
-                });
-
-                channels.sort();
-
-                for (var i in channels)
-                {
-                    $("#div_who_channels").append("<p class=\"no_border who_channel\" style=\"padding: 5px; cursor:pointer\" who_channel=\"" + channels[i] + "\">" + ucfirst(channels[i]) + "</p>");
-                }
-
-                $("#div_who_channels > .who_channel").click(function() {
-
-                    if ($(this).hasClass("bg_medium")) clear = true; else clear = false;
-
-                    $("#div_who_channels > .who_channel").removeClass("bg_medium");
-
-                    $(this).addClass("bg_medium");
-
-                    $("#div_who_players").html("");
-
-                    for (var i in GMCP.WhoList)
-                    {
-                        if ($(this).html() == "All Players" || (GMCP.WhoList[i].channels && $.inArray($(this).attr("who_channel"), GMCP.WhoList[i].channels) > -1))
-                        {
-                            $("#div_who_players").append("<p class=\"no_border who_name\" style=\"padding: 2px 5px; cursor:pointer\">" + GMCP.WhoList[i].name + "</p>");
-                        }
-                    }
-
-                    // TODO: don't duplicate things here ...
-                    $("#div_who_players > .who_name").click(function() {
-                        var name = $(this).html();
-                        send_direct('honours ' + name);
-/*
-                        if ($(this).hasClass("bg_medium")) clear = true; else clear = false;
-
-                        $("#div_who_players > .who_name").removeClass("bg_medium");
-                        $("#div_who_players > .buttons").remove();
-
-                        if (!clear)
-                        {
-                            $(this).addClass("bg_medium");
-                            var name = $(this).html();
-
-                            $(this).after("<p class=\"buttons txt_center\">" +
-                                            "<button class=\"send\" rel=\"honours " + name + "\">Honors</button>" +
-                                            //"<button class=\"open_channel\"  name=\"Chat with " + name + "\" caption=\"Chat with " + name + "\" command=\"tell " + name + "\">Chat</button>" +
-                                          "</p>");
-                            $("#div_who_players > .buttons > button.send").button().click(function() {send_direct($(this).attr("rel"), true);});
-                            $("#div_who_players > .buttons > button.open_channel").button().click(function() {open_channel($(this).attr("name"),$(this).attr("caption"),$(this).attr("command"));});
-                        }
-*/
-                    });
-                });
-
-            }, 0);
-        }
 
         if (gmcp_method == "IRE.Rift.Change")
         {
