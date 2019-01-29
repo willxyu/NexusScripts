@@ -48,6 +48,10 @@ gmcpf.map = {
   ['IRE.Sound.Play']           : {use: 'original', original: 'ireSoundplay',         lean: 'leanIreSoundplay'         },
   ['IRE.Sound.Stop']           : {use: 'original', original: 'ireSoundstop',         lean: 'leanIreSoundstop'         },
   ['IRE.Sound.StopAll']        : {use: 'original', original: 'ireSoundstopall',      lean: 'leanIreSoundstopall'      },
+  ['IRE.Target.Set']           : {use: 'original', original: 'ireTargetset',         lean: 'leanIreTargetset'         },
+  ['IRE.Target.Request']       : {use: 'original', original: 'ireTargetrequest',     lean: 'leanIreTargetrequest'     },
+  ['IRE.Target.Info']          : {use: 'original', original: 'ireTargetinfo',        lean: 'leanIreTargetinfo'        },
+  ['IRE.Misc.OneTimePassword'] : {use: 'original', original: 'ireMiscpwd',           lean: 'leanIreMiscpwd'           },
 }
   
 gmcpf.init = function() {
@@ -571,6 +575,26 @@ gmcpf.ireSoundstopall = function(data) {
   if (typeof data.fadeout_csec != 'undefined') { fadeout = data.fadeout_csec * 1000 }
   stop_all_sounds(fadeout) }
 
+gmcpf.ireTargetset = function(data) {
+  var target = data
+  var ntarget = parseInt(target)
+  if (!isNaN(ntarget)) { target = ntarget }
+  client.set_current_target(target, false)
+  client.handle_event('GMCP', 'IRE.Target.Set', target) }
+  
+gmcpf.ireTargetrequest = function(data) {
+  client.send_GMCP('IRE.Target.Set', (GMCP.Target != undefined) ? GMCP.Target: 0) }
+
+gmcpf.ireTargetinfo = function(data) {
+  var tg = parseInt(data.id)
+  var is_player = (tg == -1)
+  if ((!is_player) && tg != client.current_target())) { return }
+  var desc = data.short_desc
+  var hp = is_player ? undefined : data.hpperc
+  client.set_current_target_info(desc, hp, is_player) }
+
+gmcpf.ireMiscpwd = function(data) { dropzone_kickoff(data) }
+
 // Lean Section
 gmcpf.leanSkillgroups = function(data) { }
 
@@ -591,41 +615,6 @@ gmcpf.leanDefenceremove = function(data) {
   for (var i = 0; i < data.length; ++i) { delete GMCP.Defences[data[i]] } }
 
 gmcpf.init()
-
-  
-
-        if (gmcp_method == "IRE.Target.Set")
-        {
-            var target = gmcp_args;
-            var ntarget = parseInt(target);
-            if (!isNaN(ntarget)) target = ntarget;
-            client.set_current_target(target, false);
-
-            gmcp_fire_event = true;
-            gmcp_event_param = target;
-        }
-
-        if (gmcp_method == "IRE.Target.Request")
-        {
-            client.send_GMCP("IRE.Target.Set", (GMCP.Target != undefined) ? GMCP.Target: 0);
-        }
-
-        if (gmcp_method == "IRE.Target.Info")
-        {
-            var tg = parseInt(gmcp_args.id);
-            var is_player = (tg == -1);
-            if ((!is_player) && (tg != client.current_target())) return;   // nothing if the target has since changed - eliminates race conds. Bypassed for player targets.
-            var desc = gmcp_args.short_desc;
-            var hp = is_player ? undefined : gmcp_args.hpperc;
-            client.set_current_target_info(desc, hp, is_player);
-        }
-
-        // used to upload the drupal avatar
-        if (gmcp_method == "IRE.Misc.OneTimePassword")
-        {
-            var pwd = gmcp_args;
-            dropzone_kickoff(pwd);
-        }
 
 /*
  gmcpf.ireFilesContent = function(data) {
