@@ -2,23 +2,33 @@
 gmcpf = typeof gmcpf != 'undefined' || {}
 
 gmcpf.map = {
-  ['Char.Name']               : {use: 'original', original: 'charname',         lean: 'leanCharname'},
-  ['Char.StatusVars']         : {use: 'original', original: 'charsvars',        lean: 'leanCharsvars'},
-  ['Char.Status']             : {use: 'original', original: 'status',           lean: 'leanStatus'},
-  ['Char.Vitals']             : {use: 'original', original: 'vitals',           lean: 'leanVitals'},
-  ['Char.Skills.Groups']      : {use: 'lean',     original: 'skillgroups',      lean: 'leanSkillgroups'},
-  ['Char.Skills.List']        : {use: 'original', original: 'skillList',        lean: 'leanSkillList'},
-  ['Char.Skills.Info']        : {use: 'original', original: 'skillinfo',        lean: 'leanSkillinfo'},
-  ['Char.Afflictions.List']   : {use: 'lean',     original: 'afflictionlist',   lean: 'leanAfflictionlist'},
-  ['Char.Afflictions.Add']    : {use: 'lean',     original: 'afflictionadd',    lean: 'leanAfflictionadd'},
-  ['Char.Afflictions.Remove'] : {use: 'lean',     original: 'afflictionremove', lean: 'leanAfflictionremove'},
-  ['Char.Defences.List']      : {use: 'lean',     original: 'defencelist',      lean: 'leanDefencelist'},
-  ['Char.Defences.Add']       : {use: 'lean',     original: 'defenceadd',       lean: 'leanDefenceadd'},
-  ['Char.Defences.Remove']    : {use: 'lean',     original: 'defenceremove',    lean: 'leanDefenceremove'},
-  ['Room.AddPlayer']          : {use: 'original', original: 'roomAddplayer',    lean: 'leanRoomAddplayer'},
-  ['Room.RemovePlayer']       : {use: 'original', original: 'roomRemoveplayer', lean: 'leanRoomRemoveplayer'},
-  ['Room.Players']            : {use: 'original', original: 'roomplayers',      lean: 'leanRoomplayers'},
-  ['Char.Items.Add']          : {use: 'original', original: 'charAdditems',     lean: 'leanCharAdditems'},
+  ['Char.Name']                : {use: 'original', original: 'charname',             lean: 'leanCharname'             },
+  ['Char.StatusVars']          : {use: 'original', original: 'charsvars',            lean: 'leanCharsvars'            },
+  ['Char.Status']              : {use: 'original', original: 'status',               lean: 'leanStatus'               },
+  ['Char.Vitals']              : {use: 'original', original: 'vitals',               lean: 'leanVitals'               },
+  ['Char.Skills.Groups']       : {use: 'lean',     original: 'skillgroups',          lean: 'leanSkillgroups'          },
+  ['Char.Skills.List']         : {use: 'original', original: 'skillList',            lean: 'leanSkillList'            },
+  ['Char.Skills.Info']         : {use: 'original', original: 'skillinfo',            lean: 'leanSkillinfo'            },
+  ['Char.Afflictions.List']    : {use: 'lean',     original: 'afflictionlist',       lean: 'leanAfflictionlist'       },
+  ['Char.Afflictions.Add']     : {use: 'lean',     original: 'afflictionadd',        lean: 'leanAfflictionadd'        },
+  ['Char.Afflictions.Remove']  : {use: 'lean',     original: 'afflictionremove',     lean: 'leanAfflictionremove'     },
+  ['Char.Defences.List']       : {use: 'lean',     original: 'defencelist',          lean: 'leanDefencelist'          },
+  ['Char.Defences.Add']        : {use: 'lean',     original: 'defenceadd',           lean: 'leanDefenceadd'           },
+  ['Char.Defences.Remove']     : {use: 'lean',     original: 'defenceremove',        lean: 'leanDefenceremove'        },
+  ['Room.AddPlayer']           : {use: 'original', original: 'roomAddplayer',        lean: 'leanRoomAddplayer'        },
+  ['Room.RemovePlayer']        : {use: 'original', original: 'roomRemoveplayer',     lean: 'leanRoomRemoveplayer'     },
+  ['Room.Players']             : {use: 'original', original: 'roomplayers',          lean: 'leanRoomplayers'          },
+  ['Char.Items.Add']           : {use: 'original', original: 'charAdditems',         lean: 'leanCharAdditems'         },
+  ['Char.Items.Update']        : {use: 'original', original: 'charUpdateitems',      lean: 'leanCharUpdateitems'      },
+  ['Char.Items.Remove']        : {use: 'original', original: 'charRemoveitems',      lean: 'leanCharRemoveitems'      },
+  ['Char.Items.List']          : {use: 'original', original: 'charListitems',        lean: 'leanCharListitems'        },
+  ['IRE.Display.Help']         : {use: 'original', original: 'ireDisplayhelp',       lean: 'leanIreDisplayhelp'       },
+  ['IRE.Display.Window']       : {use: 'original', original: 'ireDisplaywindow',     lean: 'leanIreDisplaywindow'     },
+  ['IRE.Display.FixedFont']    : {use: 'original', original: 'ireDisplayfixedfont',  lean: 'leanIreDisplayfixedfont'  },
+  ['IRE.Display.AutoFill']     : {use: 'original', original: 'ireDisplayautofill',   lean: 'leanIreDisplayautofill'   },
+  ['IRE.Display.HidePopup']    : {use: 'original', original: 'ireDisplayhidepopup',  lean: 'leanIreDisplayhidepopup'  },
+  ['IRE.Display.HideAllPopups']: {use: 'original', original: 'ireDisplayhidepopups', lean: 'leanIreDisplayhidepopups' },
+  ['IRE.Display.Popup']        : {use: 'original', original: 'ireDisplaypopup',      lean: 'leanIreDisplaypopup'      },
 }
 
 gmcpf.init = function() {
@@ -30,8 +40,7 @@ gmcpf.init = function() {
         gmcpf[m[m.use]](data) 
       }
     })
-  }
-}
+  } }
 
 gmcpf.charname = function(data) {
   GMCP.Character = data
@@ -188,6 +197,109 @@ gmcpf.charAdditems = function(data) {
   itemlist_events( data.item )
   update_item_visibility() }
 
+gmcpf.charUpdateitems = function(data) {
+  var div_id = itemlist_divid(data.location, data.item)
+  if (div_id == null) { return }
+  var orig = $(div_id + ' #' + data.item.id)
+  var orig_crosstype = $('#div_inventory #' + data.item.id)
+  if (orig_crosstype.length > orig.length) {
+    orig_crosstype.remove()
+    crossbuttons = true
+    orig = new Array()
+  }
+  var buttons = $('#div_inventory .buttons_' + data.item.id)
+  buttons.remove()
+  var newtext = itemlist_entry(data.item)
+  if (orig.length) {
+    orig.replaceWith(newtext)
+  } else {
+    $(div_id).append(newtext)
+  }
+  itemlist_events(data.item)
+  var room = (data.location == 'room')
+  var parentid = room ? '#container_room_contents' : '#tab_content_inventory'
+  if (buttons.length) { item_button_click($(parentid + ' #' + data.item.id), !room) }
+  update_item_visibility() }
+
+gmcpf.charRemoveitems = function(data) {
+  if (typeof data.item.id != 'undefined') {
+    temp_item_id = data.item.id 
+  } else {
+    temp_item_id = data.item 
+  }
+  if (data.location == 'room') {
+    div_id = '#container_room_contents'
+    $(div_id + ' #' + temp_item_id).remove()
+    $(div_id + ' .buttons_' + temp_item_id).remove()
+  } else {
+    $('#div_inventory #' + temp_item_id).remove()
+    $('#div_inventory .buttons_' + temp_item_id).remove()
+  } }
+
+gmcpf.charListitems = function(data) {
+  setTimeout(function() {
+    if (data.location == 'room') {
+      $('#div_room_items, #div_room_mobs').html('')
+    } else if (data.location == 'inv') {
+      var str  = ''
+          str += '<div class=\'subsection\'><div class=\'heading\'>Wielded</div>'
+          str += '<div class=\'section_content\' id=\'div_inv_wielded\'></div></div>'
+          str += '<div class=\'hrule\'></div><div class=\'subsection\'><div class=\'heading\'>Worn</div>'
+          str += '<div class=\'section_content\' id=\'div_inv_worn\'></div></div>'
+          str += '<div class=\'hrule\'></div><div class=\'subsection\'><div class=\'heading\'>Other</div>'
+          str += '<div class=\'section_content\' id=\'div_inv_items\'></div></div>'
+      $('#div_inventory').html(str)
+    } else if (data.location.substr(0, 3) == 'rep') {
+      var id = data.location.substr(3)
+      var container = 'div_inv_container' + id
+      $('#' + container).remove()
+      $('#' + id + ' > .fa.fa-plus-circle').removeClass('fa-plus-circle').addClass('fa-minus-circle')
+      $('#' + id + ', .buttons_' + id).addClass('open_container')
+      var after = $('.buttons_' + id)
+      if (after.length == 0) { after = $('#' + id) }
+      after.after('<div id=\'' + container + '\' class=\'item-container open_container\'></div>')
+    }
+    for (var k in data.items) {
+      var div_id = itemlist_divid(data.location, data.items[k])
+      if (div_id == null) { continue }
+      $(div_id).append(itemlist_entry(data.items[k]))
+      itemlist_events(data.items[k])
+    }
+    update_item_visibility()
+  }, 0) }
+
+gmcpf.ireDisplayhelp = function(data) {
+  if (client.popups_help !== true) { return }
+  var res = {}
+      res.display_help = true
+      res.start = (data == 'start')
+  return res }
+
+gmcpf.ireDisplaywindow = function(data) {
+  var res = {}
+      res.display_window = true
+      res.start = (parseInt(data.start) == 1)
+      res.cmd = data.cmd
+  return res }
+  
+gmcpf.ireDisplayfixedfont = function(data) {
+  var res = {}
+      res.display_fixed_font = true
+      res.start = (data == 'start')
+  return res }
+
+gmcpf.ireDisplayautofill = function(data) {
+  $('#user_input').val(data.command)
+  if (data.highlight && (data.highlight === true || data.highlight == 'true')) {
+    document.getElementById('user_input').setSelectionRange(0, document.getElementById('user_input').value.length) }
+  $('#user_input').focus() }
+
+gmcpf.ireDisplayhidepopup = function(data) { $('#' + data.id).fadeOut({ complete: function() { $(this).remove() } }) }
+gmcpf.ireDisplayhidepopups = function(data) { $('.popup').fadeOut({ complete: function() { $(this).remove() } }) }
+
+gmcpf.ireDisplaypopup = function(data) {
+  client.display_gmcp_popup( data.id, data.element, data.src, $('<p/>').html(data.text), data.options, data.commands, data.allow_noshow) }
+
 // Lean Section
 gmcpf.leanSkillgroups = function(data) { }
 
@@ -209,160 +321,7 @@ gmcpf.leanDefenceremove = function(data) {
 
 gmcpf.init()
 
-
-
-
-
-        if (gmcp_method == "Char.Items.Update")
-        {
-            var div_id = itemlist_divid(gmcp_args.location, gmcp_args.item);
-            if (div_id == null) return;
-
-            var orig = $(div_id + " #" + gmcp_args.item.id);
-            var orig_crosstype = $("#div_inventory #" + gmcp_args.item.id);
-            // if the item moves to another tab, remove it from the original one
-            if (orig_crosstype.length > orig.length)
-            {
-                orig_crosstype.remove();
-                crossbuttons = true;
-                orig = new Array();
-            }
-            // hide buttons, but remember that they existed, if they did
-            var buttons = $("#div_inventory .buttons_" + gmcp_args.item.id);
-            buttons.remove();
-
-            var newtext = itemlist_entry(gmcp_args.item);
-            if (orig.length)
-                orig.replaceWith(newtext);
-            else
-                $(div_id).append(newtext);
-            itemlist_events(gmcp_args.item);
-
-            // if the buttons were shown, show them again
-            // we go with this hide-show thing because the item could have moved from one list to another
-            var room = (gmcp_args.location == "room");
-            var parentid = room ? "#container_room_contents" : "#tab_content_inventory";
-            if (buttons.length)
-                item_button_click($(parentid + " #" + gmcp_args.item.id), !room);
-            update_item_visibility();
-        }
-
-        if (gmcp_method == "Char.Items.Remove")
-        {
-            if (typeof gmcp_args.item.id != "undefined")
-                temp_item_id = gmcp_args.item.id;
-            else
-                temp_item_id = gmcp_args.item;
-
-            if (gmcp_args.location == "room")
-            {
-                div_id = "#container_room_contents";
-
-                $(div_id + " #" + temp_item_id).remove();
-                $(div_id + " .buttons_" + temp_item_id).remove();
-            } else
-            {
-                $("#div_inventory #" + temp_item_id).remove();
-                $("#div_inventory .buttons_" + temp_item_id).remove();
-            }
-        }
-
-        if (gmcp_method == "Char.Items.List")
-        {
-            setTimeout(function () {
-                if (gmcp_args.location == "room")
-                    $("#div_room_items, #div_room_mobs").html("");
-                else if (gmcp_args.location == "inv")
-                    $("#div_inventory").html('<div class="subsection"><div class="heading">Wielded</div><div class="section_content" id="div_inv_wielded"></div></div><div class="hrule"></div><div class="subsection"><div class="heading">Worn</div><div class="section_content" id="div_inv_worn"></div></div><div class="hrule"></div><div class="subsection"><div class="heading">Other</div><div class="section_content" id="div_inv_items"></div></div>');
-                else if (gmcp_args.location.substr(0, 3) == "rep") {
-                    var id = gmcp_args.location.substr(3);
-                    var container = "div_inv_container" + id;
-                    $("#"+container).remove();
-
-                    $("#" + id + " > .fa.fa-plus-circle").removeClass("fa-plus-circle").addClass("fa-minus-circle");
-                    $("#" + id + ", .buttons_" + id).addClass('open_container');
-                    // if buttons exist, display the container after them
-                    var after = $(".buttons_" + id);
-                    if (after.length == 0) after = $("#" + id);
-                    after.after("<div id=\"" + container + "\" class=\"item-container open_container\"></div>");
-                }
-
-                for (var i in gmcp_args.items)
-                {
-                    var div_id = itemlist_divid(gmcp_args.location, gmcp_args.items[i]);
-                    if (div_id == null) continue;
-                    $(div_id).append(itemlist_entry(gmcp_args.items[i]));
-                    itemlist_events(gmcp_args.items[i]);
-                }
-                update_item_visibility();
-            }, 0);
-        }
-
-        if (gmcp_method == "IRE.Display.Help" && client.popups_help === true)
-        {
-            var res = {};
-            res.display_help = true;
-            res.start = (gmcp_args == "start");
-            return res;
-        }
-
-        if (gmcp_method == "IRE.Display.Window" && client.popups_help === true)
-        {
-            var res = {};
-            res.display_window = true;
-            res.start = (parseInt(gmcp_args.start) == 1);
-            res.cmd = gmcp_args.cmd;
-            return res;
-        }
-
-        if (gmcp_method == "IRE.Display.FixedFont")
-        {
-            var res = {};
-            res.display_fixed_font = true;
-            res.start = (gmcp_args == "start");
-            return res;
-        }
-
-        if (gmcp_method == "IRE.Display.AutoFill")
-        {
-            $("#user_input").val(gmcp_args.command);
-
-            if (gmcp_args.highlight && (gmcp_args.highlight === true || gmcp_args.highlight == "true"))
-                document.getElementById("user_input").setSelectionRange(0,document.getElementById("user_input").value.length);
-
-            $("#user_input").focus();
-        }
-
-        if (gmcp_method == "IRE.Display.HidePopup")
-        {
-            $("#" + gmcp_args.id).fadeOut({
-                complete: function () {$(this).remove()}
-            });
-        }
-
-        if (gmcp_method == "IRE.Display.HideAllPopups")
-        {
-            $(".popup").fadeOut({
-                complete: function () {$(this).remove()}
-            });
-        }
-
-        if (gmcp_method == "IRE.Display.Popup")
-        {
-            //{"id":"test","src":"/games/images/arrow-down-animated.gif","element":"#user_input","options":{}}
-
-            var id = gmcp_args.id,
-                element = gmcp_args.element,
-                src = gmcp_args.src,
-                content = $("<p/>").html(gmcp_args.text),
-                options = gmcp_args.options,
-                commands = gmcp_args.commands,
-                allow_noshow = gmcp_args.allow_noshow;
-
-            //print(gmcp_method + ":<br/>" + JSON.stringify(gmcp_args));
-
-            client.display_gmcp_popup(id, element, src, content, options, commands, allow_noshow);
-        }
+  
 
         if ((gmcp_method == "IRE.Display.Ohmap") && client.map_enabled())
         {
