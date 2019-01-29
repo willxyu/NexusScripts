@@ -36,6 +36,13 @@ gmcpf.map = {
   ['Comm.Channel.Text']        : {use: 'original', original: 'commChanntext',        lean: 'leanCommChanntext'        },
   ['Comm.Channel.List']        : {use: 'original', original: 'commChannlist',        lean: 'leanCommChannlist'        },
   ['Comm.Channel.Players']     : {use: 'original', original: 'commChannplayers',     lean: 'leanCommChannplayers'     },
+  ['IRE.Rift.Change']          : {use: 'original', original: 'ireRiftchange',        lean: 'leanIreRiftchange'        },
+  ['IRE.Rift.List']            : {use: 'original', original: 'ireRiftlist',          lean: 'leanIreRiftlist'          },
+  ['IRE.Tasks.List']           : {use: 'original', original: 'ireTasklist',          lean: 'leanIreTasklist'          },
+  ['IRE.Tasks.Update']         : {use: 'original', original: 'ireTaskupdate',        lean: 'leanIreTaskupdate'        },
+  ['IRE.Time.List']            : {use: 'original', original: 'ireTimelist',          lean: 'leanIreTimelist'          },
+  ['IRE.Time.Update']          : {use: 'original', original: 'ireTimeupdate',        lean: 'leanIreTimeupdate'        },
+  ['Room.Info']                : {use: 'original', original: 'roominfo',             lean: 'leanRoominfo'             },
 }
 
 gmcpf.init = function() {
@@ -44,7 +51,7 @@ gmcpf.init = function() {
     $(document).off('gmcp-' + k)
     $(document).on('gmcp-' + k, function(data) {
       if (typeof gmcpf[m[m.use]] == 'function') {
-        gmcpf[m[m.use]](data) 
+        gmcpf[m[m.use]](data[0]) 
       }
     })
   } }
@@ -396,6 +403,144 @@ gmcpf.commChannplayers = function(data) {
     })
   }, 0) }
 
+gmcpf.ireRiftchange = function(data) {
+  var name = data.name
+  if (data.amount) {
+    GMCP.Rift[name] = {amount: data.amount, desc: data.desc }
+  } else {
+    delete GMCP.Rift[name]
+  }
+  if (GMCP.rift_update_timeout) { window.clearTimeout(GMCP.rift_update_timeout) }
+  GMCP.rift_update_timeout = window.setTimeout(function() {
+    GMCP.rift_update_timeout = null
+    client.render_rift()
+  }, 20) }
+
+gmcpf.ireRiftlist = function(data) {
+  GMCP.Rift = {}
+  for (var k in data) {
+    GMCP.Rift[data[k].name] = { amount: data[k].amount, desc: data[k].desc }
+  }
+  setTimeout(function() { client.render_rift() }, 0) }
+
+gmcpf.ireTasklist = function(data) {
+  GMCP.TaskList = {}
+  setTimeout( function() {
+    var types = ['task', 'quest', 'achievement' ]
+    for (var tt = 0; tt < types.length; ++tt) {
+      var type = types[tt]
+      var groups = {}
+      var grouporder = new Array()
+      grouporder.push('Active')
+      var lastgroups = new Array()
+      lastgroups.push('Completed')
+      for (var k in data) {
+       if (data[k].type.toLowerCase().indexOf(type) < 0) { continue }
+       GMCP.TaskList[type + data[k].id] = data[k]
+       var group = data[k].group
+       if (groups[group] == null) { groups[group] = new Array() }
+       groups[group].push(k)
+       if ((grouporder.indexOf(group) < 0) && (lastgroups.indexOf(group) < 0)) { grouporder.push(group) }
+      }
+      for (var i = 0; i < lastgroups.length; ++i) { grouporder.push(lastgroups[i]) }
+      var tbl = $('#tbl_' + type + 's')
+      tbl.html('')
+      var count = 0
+      var gid   = 0
+      for (var g = 0; g < grouporder.length; ++g) {
+        var group = grouporder[g]
+        if (groups[group] == null) || (groups[group].length == 0)) { continue }
+        var section = ''
+        gid++
+        for (var idx = 0; idx < groups[group].length; ++idx) {
+          var i = groups[group][idx]
+          var html = task_hteml(type, data[i])
+          section += '<div id=\'' + type + data[i].id + '\' class=\'task_group_' + type + gid + '\'>' + html + '</div>'
+        }
+        section = '<div class=\'subsection\'><div class=\'heading\'>' + client.escape_html(group) + '</div><div class=\'section_content\'>' + section + '</div>'
+        if (count > 0) { tbl.append('<div class=\'hrule\'></div>') }
+        tbl.append(section)
+        for (var idx = 0; idx < groups[group].length; ++idx) {
+          var i = groups[group][idx]
+          task_html_add_handler(type, data[i])
+        }
+        count++
+      }
+    }
+  }, 0) }
+
+gmcpf.ireTaskupdate = function(data) {
+  setTimeout( function() {
+    var types = ['task', 'quest', 'achievement']
+    for (var tt = 0; tt < types.length; ++tt) {
+      var type = types[tt]
+      for (var k in data) {
+       if (data[k].type.toLowerCase().indexOf(type) < 0) { continue }
+       GMCP.TaskList[type + data[k].id] = data[k]
+       var html = task_html(type, data[k])
+       $('div#' + type + data[k].id).html(html)
+       task_html_add_handler(type, data[k])
+      }
+    }
+  }, 0) }
+
+gmcpf.ireTimelist = function(data) {
+  GMCP.Time = {}
+  for (var k in data) { GMCP.Time[k] = data[k] } }
+
+gmcpf.ireTimeupdate = function(data) {
+  for (var k in data) { GMCP.Time[k] = data[k] } }
+  
+gmcpf.roominfo = function(data) {
+  setTimeout(function() {
+    var map = client.mapper
+    $('#div_room_description').html(data.desc.replace(/\n/g, '<br>'))
+    map.roomName  = data.name
+    map.roomExits = data.exits
+    map.set_map_background(data.background)
+    map.set_map_linecolor(data.linecolor)
+    map.cID = data.num
+    if (!data.ohmap) { map.overhead = false }
+    var coords = data.coords.split(/,/g)
+    var coords_okay = false
+    var area_id  = undefined
+    var x        = undefined
+    var y        = undefined
+    var z        = undefined
+    var building = undefined
+    if (coords && coords.length >= 4) {
+     area_id = coords[0]
+     x       = coords[1]
+     y       = coords[2]
+     z       = coords[3]
+     building= (coords.length >= 5) ? coords[4] : 0
+     if ($.isNumeric(area_id) && $.isNumeric(x) && $.isNumeric(y) && $.isNumeric(z)) { coords_okay = true }
+    }
+    if (!coords_okay) { map.set_area_name(data.area) }
+    last_x = map.cX
+    last_y = map.cY
+    last_z = map.cZ
+    last_building = map.cB
+    map.cX = x
+    map.cY = y
+    map.cZ = z
+    map.cB = building
+    GMCP.CurrentArea.id = area_id
+    GMCP.CurrentArea.level = z
+    if (coords_okay && (map.cArea != area_id)) { 
+      map.cArea = area_id
+      map.load_map_data()
+    } else {
+      if ((map.cZ != last_z) || (map.cB != last_building)) {
+        map.draw_map()
+      } else {
+        map.draw_player() 
+      }
+    }
+    client.update_movement_compass(data.exits)
+  }, 0)
+  client.handle_event('GMCP', 'Room.Info', data.num) }
+
 // Lean Section
 gmcpf.leanSkillgroups = function(data) { }
 
@@ -419,251 +564,6 @@ gmcpf.init()
 
 
 
-
-
-
-        if (gmcp_method == "IRE.Rift.Change")
-        {
-            var name = gmcp_args.name;
-            if (gmcp_args.amount)
-                GMCP.Rift[name] = { amount: gmcp_args.amount, desc: gmcp_args.desc };
-            else
-                delete GMCP.Rift[name];
-
-            // update the rift, but only once per 20ms to avoid too much updating
-            if (GMCP.rift_update_timeout) window.clearTimeout (GMCP.rift_update_timeout);
-            GMCP.rift_update_timeout = window.setTimeout(function () {
-                GMCP.rift_update_timeout = null;
-                client.render_rift();
-            }, 20);
-        }
-
-        if (gmcp_method == "IRE.Rift.List")
-        {
-            GMCP.Rift = {};
-            for (var i in gmcp_args) {
-                var name = gmcp_args[i].name;
-                GMCP.Rift[name] = { amount: gmcp_args[i].amount, desc: gmcp_args[i].desc };
-            }
-            setTimeout(function () {
-                client.render_rift();
-            },0);
-        }
-
-        if (gmcp_method == "IRE.FileStore.Content")
-        {
-            var file = gmcp_args;
-
-            if (file.name && file.name == "raw_refresh")
-            {
-                //console.log(file);
-                if (file.text != "")
-                {
-                    import_system(file.text);
-                }
-
-                $.colorbox.close();
-            } else if (file.name && file.name == "raw") {
-                if (file.text != "")
-                {
-                    import_system(file.text);
-                }
-            }
-        }
-
-        if (gmcp_method == "IRE.FileStore.List")
-        {
-            var list = gmcp_args;
-            if (client.settings_window && client.settings_window.process_filelist)
-                client.settings_window.process_filelist (list);
-        }
-
-        if (gmcp_method == "IRE.Tasks.List")
-        {
-            GMCP.TaskList = {};
-
-            setTimeout(function () {
-                /*gmcp_args.sort(function (a,b) {
-                    if (a.group < b.group)
-                        return -1;
-                    if (a.group > b.group)
-                        return 1;
-                    return 0;
-                });*/
-
-                var types = [ "task", "quest", "achievement" ];
-                for (var tt = 0; tt < types.length; ++tt) {
-                    var type = types[tt];
-
-                    var groups = {};
-                    var grouporder = new Array();   // groups in the order in which they were encountered
-                    // the "Active" group always exists on the top (only shown if we have such tasks)
-                    grouporder.push("Active");
-                    // Similarly, the Completed one always exists at the bottom
-                    var lastgroups = new Array();
-                    lastgroups.push("Completed");
-                    for (var i in gmcp_args)
-                    {
-                        if (gmcp_args[i].type.toLowerCase().indexOf(type) < 0) continue;
-
-                        GMCP.TaskList[type + gmcp_args[i].id] = gmcp_args[i];
-
-                        var group = gmcp_args[i].group;
-                        if (groups[group] == null) groups[group] = new Array();
-
-                        groups[group].push(i);
-                        if ((grouporder.indexOf(group) < 0) && (lastgroups.indexOf(group) < 0))
-                            grouporder.push(group);
-                    }
-
-                    for (var g = 0; g < lastgroups.length; ++g)
-                        grouporder.push(lastgroups[g]);
-
-                    var tbl = $("#tbl_"+type+"s");
-                    tbl.html("");
-                    var count = 0;
-                    var gid = 0;
-                    for (var g = 0; g < grouporder.length; ++g) {
-                        var group = grouporder[g];
-                        if ((groups[group] == null) || (groups[group].length == 0)) continue;
-                        var section = '';
-                        gid++;
-                        for (var idx = 0; idx < groups[group].length; ++idx) {
-                            var i = groups[group][idx];
-
-                            var html = task_html(type, gmcp_args[i]);
-                            section += "<div id=\""+type+gmcp_args[i].id+"\" class=\"task_group_" + type + gid + "\">" + html + "</div>";
-                        }
-                        section = '<div class="subsection"><div class="heading">' + client.escape_html(group) + '</div><div class="section_content">' + section + '</div>';
-
-                        if (count > 0)  tbl.append ('<div class="hrule"></div>');
-                        tbl.append (section);
-                        for (var idx = 0; idx < groups[group].length; ++idx) {
-                            var i = groups[group][idx];
-                            task_html_add_handler(type, gmcp_args[i]);
-                        }
-                        count++;
-                    }
-                }
-            },0);
-        }
-
-        if (gmcp_method == "IRE.Tasks.Update")
-        {
-            setTimeout(function () {
-
-                var types = [ "task", "quest", "achievement" ];
-                for (var tt = 0; tt < types.length; ++tt) {
-                    var type = types[tt];
-
-                    for (var i in gmcp_args)
-                    {
-                        if (gmcp_args[i].type.toLowerCase().indexOf(type) < 0) continue;
-
-                        GMCP.TaskList[type + gmcp_args[i].id] = gmcp_args[i];
-
-                        var html = task_html(type, gmcp_args[i]);
-
-                        $("div#"+type+gmcp_args[i].id).html(html);
-                        task_html_add_handler(type, gmcp_args[i]);
-                    }
-                }
-            },0);
-        }
-
-        if (gmcp_method == "IRE.Time.List")
-        {
-            GMCP.Time = {};
-
-            //setTimeout(function () {
-                for (var i in gmcp_args)
-                {
-                    GMCP.Time[i] = gmcp_args[i];
-                }
-            //},0);
-        }
-
-        if (gmcp_method == "IRE.Time.Update")
-        {
-            //setTimeout(function () {
-                for (var i in gmcp_args)
-                {
-                    GMCP.Time[i] = gmcp_args[i]
-                }
-            //},0);
-        }
-
-        if (gmcp_method == "Room.Info")
-        {
-            setTimeout(function() {
-
-                var map = client.mapper;
-                $("#div_room_description").html(gmcp_args.desc.replace(/\n/g,"<br>"))
-
-                map.roomName = gmcp_args.name;
-                map.roomExits = gmcp_args.exits;
-
-                // these need to be before the actual map updating
-                map.set_map_background(gmcp_args.background);
-                map.set_map_linecolor(gmcp_args.linecolor);
-
-                map.cID = gmcp_args.num;
-                // if this is not an ohmap room, disable the mode
-                if (!gmcp_args.ohmap) map.overhead = false;
-
-                var coords = gmcp_args.coords.split(/,/g);
-                var coords_okay = false;
-                var area_id = undefined;
-                var x = undefined;
-                var y = undefined;
-                var z = undefined;
-                var building = undefined;
-
-                if (coords && coords.length >= 4) {
-                    area_id = coords[0];
-                    x = coords[1];
-                    y = coords[2];
-                    z = coords[3];
-                    building = (coords.length >= 5) ? coords[4] : 0;
-
-                    if ($.isNumeric(area_id) && $.isNumeric(x) && $.isNumeric(y) && $.isNumeric(z)) coords_okay = true;
-                }
-                if (!coords_okay)
-                    // Coords can't be parsed -- show the supplied area name instead, if any.
-                    map.set_area_name(gmcp_args.area);
-
-                last_x = map.cX;
-                last_y = map.cY;
-                last_z = map.cZ;
-                last_building = map.cB;
-
-                map.cX = x;
-                map.cY = y;
-                map.cZ = z;
-                map.cB = building;
-
-                GMCP.CurrentArea.id = area_id;
-                GMCP.CurrentArea.level = z;
-
-                if (coords_okay && (map.cArea != area_id))
-                {
-                    map.cArea = area_id;
-                    map.load_map_data();
-                } else {
-                    if ((map.cZ != last_z) || (map.cB != last_building))
-                    {
-                        map.draw_map();
-                    } else {
-                        map.draw_player();
-                    }
-                }
-
-                client.update_movement_compass(gmcp_args.exits);
-            }, 0);
-
-            gmcp_fire_event = true;
-            gmcp_event_param = gmcp_args.num;
-        }
 
         if (gmcp_method == "IRE.Composer.Edit")
         {
@@ -755,3 +655,21 @@ gmcpf.init()
             dropzone_kickoff(pwd);
         }
 
+/*
+ gmcpf.ireFilesContent = function(data) {
+  var file = data
+  if (file.name && file.name == 'raw_refresh') {
+    if (file.text != '') {
+      import_system(file.text)
+    }
+    $.colorbox.close()
+  } else if (file.name && file.name == 'raw') {
+    if (file.text != '') {
+      import_system(file.text)
+    }
+  } }
+
+ gmcpf.ireFilesList = function(data) {
+  var list = data
+  if (client.settings_window && client.settings_window.process_filelist) { client.settings_window.process_filelist(list) } }
+ */
