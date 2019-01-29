@@ -43,8 +43,13 @@ gmcpf.map = {
   ['IRE.Time.List']            : {use: 'original', original: 'ireTimelist',          lean: 'leanIreTimelist'          },
   ['IRE.Time.Update']          : {use: 'original', original: 'ireTimeupdate',        lean: 'leanIreTimeupdate'        },
   ['Room.Info']                : {use: 'original', original: 'roominfo',             lean: 'leanRoominfo'             },
+  ['IRE.Composer.Edit']        : {use: 'original', original: 'ireComposeredit',      lean: 'leanComposeredit'         },
+  ['IRE.Sound.Preload']        : {use: 'original', original: 'ireSoundpreload',      lean: 'leanIreSoundpreload'      },
+  ['IRE.Sound.Play']           : {use: 'original', original: 'ireSoundplay',         lean: 'leanIreSoundplay'         },
+  ['IRE.Sound.Stop']           : {use: 'original', original: 'ireSoundstop',         lean: 'leanIreSoundstop'         },
+  ['IRE.Sound.StopAll']        : {use: 'original', original: 'ireSoundstopall',      lean: 'leanIreSoundstopall'      },
 }
-
+  
 gmcpf.init = function() {
   for (var k in gmcpf.map) {
     let m = gmcpf.map[k]
@@ -541,6 +546,31 @@ gmcpf.roominfo = function(data) {
   }, 0)
   client.handle_event('GMCP', 'Room.Info', data.num) }
 
+gmcpf.ireComposeredit = function(data) {
+  var composer_edit = data
+  if (composer_edit.title != '') { $('#composer_title').html(composer_edit.title) }
+  $.colorbox({width: '700px', open: true, inline: true, href: '#m_composer' })
+  $('#composer_text').val(composer_edit.text).focus() }
+
+gmcpf.ireSoundpreload = function(data) { preload_sound('library/' + data.name) }
+  
+gmcpf. ireSoundplay = function(data) {
+  fadein = fadeout = loop = false
+  if (typeof data.fadein_csec != 'undefined') { fadein = data.fadein_csec * 1000 }
+  if (typeof data.fadeout_csec != 'undefined') { fadeout = data.fadeout_csec * 1000 }
+  if (typeof data.loop != 'undefined' && (data.loop == 'true' || data.loop == true)) { loop = true }
+  play_sound('library/' + data.name, fadein, fadeout, loop) }
+  
+gmcpf.ireSoundstop = function(data) {
+  fadeout = false
+  if (typeof data.fadeout_csec != 'undefined') { fadeout = data.fadeout_csec * 1000 }
+  stop_sound(data.name, fadeout) }
+  
+gmcpf.ireSoundstopall = function(data) {
+  fadeout = false
+  if (typeof data.fadeout_csec != 'undefined') { fadeout = data.fadeout_csec * 1000 }
+  stop_all_sounds(fadeout) }
+
 // Lean Section
 gmcpf.leanSkillgroups = function(data) { }
 
@@ -562,65 +592,7 @@ gmcpf.leanDefenceremove = function(data) {
 
 gmcpf.init()
 
-
-
-
-        if (gmcp_method == "IRE.Composer.Edit")
-        {
-            //print(JSON.stringify(gmcp_args));
-
-            var composer_edit = gmcp_args;
-
-            if (composer_edit.title != "")
-            {
-                $("#composer_title").html(composer_edit.title);
-            }
-
-            $.colorbox({width: "700px", open:true, inline:true, href:"#m_composer"});
-
-            $("#composer_text").val(composer_edit.text).focus();
-        }
-
-        if (gmcp_method == "IRE.Sound.Preload")
-        {
-            preload_sound('library/' + gmcp_args.name);
-        }
-
-        if (gmcp_method == "IRE.Sound.Play")
-        {
-            fadein = fadeout = loop = false;
-
-            if (typeof gmcp_args.fadein_csec != "undefined")
-                fadein = gmcp_args.fadein_csec * 1000; // GMCP provides in seconds, sound lib needs milliseconds //
-
-            if (typeof gmcp_args.fadeout_csec != "undefined")
-                fadeout = gmcp_args.fadeout_csec * 1000;
-
-            if (typeof gmcp_args.loop != "undefined" && (gmcp_args.loop == "true" || gmcp_args.loop == true))
-                loop = true;
-
-            play_sound('library/' + gmcp_args.name, fadein, fadeout, loop);
-        }
-
-        if (gmcp_method == "IRE.Sound.Stop")
-        {
-            fadeout = false;
-
-            if (typeof gmcp_args.fadeout_csec != "undefined")
-                fadeout = gmcp_args.fadeout_csec * 1000;
-
-            stop_sound(gmcp_args.name, fadeout);
-        }
-
-        if (gmcp_method == "IRE.Sound.StopAll")
-        {
-            fadeout = false;
-
-            if (typeof gmcp_args.fadeout_csec != "undefined")
-                fadeout = gmcp_args.fadeout_csec * 1000;
-
-            stop_all_sounds(fadeout);
-        }
+  
 
         if (gmcp_method == "IRE.Target.Set")
         {
