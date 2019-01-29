@@ -88,6 +88,8 @@ if (typeof client != 'undefined') {
         return res
       }
       // The rest of GMCP we will provide specific event control
+      $(document).trigger('gmcp-' + gmcp_method, [gmcp_args])
+      $(document).trigger('gmcp-' + gmcp_method + '-user', [gmcp_args])
       
       // 3 pre-existing bound behaviours
       $(document).trigger('onGMCP', [gmcp_method, gmcp_args])
