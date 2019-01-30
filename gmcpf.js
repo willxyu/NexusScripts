@@ -615,15 +615,13 @@ gmcpf.leanAfflictionlist = function(data) {
 gmcpf.leanAfflictionadd = function(data) { GMCP.Afflictions[data.name] = data }
 gmcpf.leanAfflictionremove = function(data) {
   for (var i = 0; i < data.length; ++i) { delete GMCP.Afflictions[data[i]] } }
-/*
+
 gmcpf.leanDefencelist = function(data) {
   GMCP.Defences = {}
-  for (var i = 0; i < data.length; ++) { GMCP.Defences[data[i].name] = data[i] } }
+  for (var i = 0; i < data.length; ++i) { GMCP.Defences[data[i].name] = data[i] } }
 gmcpf.leanDefenceadd = function(data) { GMCP.Defences[data.name] = data }
 gmcpf.leanDefenceremove = function(data) {
   for (var i = 0; i < data.length; ++i) { delete GMCP.Defences[data[i]] } }
-
-*/
   
 gmcpf.init()
 
