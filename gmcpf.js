@@ -1,6 +1,5 @@
 gmcpf = typeof gmcpf != 'undefined' ? gmcpf : {}
-
-gmcpf.debug = true
+gmcpf.debug = false
 
 gmcpf.map = {
   ['Char.Name']                : {use: 'original', original: 'charname',             lean: 'leanCharname'             },
