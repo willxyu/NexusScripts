@@ -602,7 +602,7 @@ gmcpf.ireTargetinfo = function(data) {
   client.set_current_target_info(desc, hp, is_player) }
 
 gmcpf.ireMiscpwd = function(data) { dropzone_kickoff(data) }
-/*
+
 // Lean Section
 gmcpf.leanSkillgroups = function(data) { }
 
@@ -615,6 +615,7 @@ gmcpf.leanAfflictionlist = function(data) {
 gmcpf.leanAfflictionadd = function(data) { GMCP.Afflictions[data.name] = data }
 gmcpf.leanAfflictionremove = function(data) {
   for (var i = 0; i < data.length; ++i) { delete GMCP.Afflictions[data[i]] } }
+/*
 gmcpf.leanDefencelist = function(data) {
   GMCP.Defences = {}
   for (var i = 0; i < data.length; ++) { GMCP.Defences[data[i].name] = data[i] } }
