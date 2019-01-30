@@ -74,7 +74,7 @@ gmcpf.charname = function(data) {
   setTimeout( function() { if (client.load_settings) { gmcp_import_system() } }, 1000 ) }
 
 gmcpf.charsvars = function(data) { GMCP.StatusVars = data }
-/*
+
 gmcpf.status = function(data) {
   if (GMCP.Status == null) { GMCP.Status = {} }
   var s = data
@@ -100,7 +100,7 @@ gmcpf.vitals = function(data) {
   parse_gauges(data)
   if (client.game == 'Lusternia') { parse_lusternia_wounds(data) }
   client.handle_event('GMCP', 'Char.Vitals', '') }
-
+/*
 gmcpf.skillgroups = function(data) {
   $('#tbl_skills').html('<table><tbody></tbody></table>')
   var skills = $('#tbl_skills tbody')
