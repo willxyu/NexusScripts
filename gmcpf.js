@@ -113,7 +113,8 @@ gmcpf.skillgroups = function(data) {
   }
   // reduced multiple appending to single call
   skills.append(str)
-  $('#tbl_skills tr').css('cursor', 'pointer')
+  $('#tbl_skills tr').css('cursor', 'pointer').click(function() {
+  })
 }
 /* 
 gmcpf.skillList = function(data) {
