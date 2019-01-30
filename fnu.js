@@ -130,7 +130,7 @@ if (typeof client != 'undefined' && typeof client.mapper != 'undefined') {
     if (($('#map_container').prop('scrollTop') == 0) && ($('#map_container').prop('scrollleft') == 0)) {
       t = 0
     }
-    if (map.previousZoom != map.zoom)
+    if (map.previousZoom != map.zoom) {
       t = 0  
     }
     map.previousZoom = map.zoom
