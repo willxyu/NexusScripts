@@ -110,13 +110,7 @@ gmcpf.skillgroups = function(data) {
   var str    = ''
   for (var i in data) {
     str += temp.replace('DATA_NAMEG', data[i].name).replace('DATA_NAME', data[i].name).replace('DATA_RANK', data[i].rank)
-  }
-  // reduced multiple appending to single call
-  skills.append(str)
-  $('#tbl_skills tr').css('cursor', 'pointer').click( function() {
-    send_GMCP('Char.Skills.Get', {'group': $(this).find('.skill_group').attr('group')})
-    GMCP.WaitingForSkills = true
-  }) }
+  } }
 /* 
 gmcpf.skillList = function(data) {
   if (GMCP.WaitingForSkills == true) {
