@@ -127,7 +127,7 @@ if (typeof client != 'undefined' && typeof client.mapper != 'undefined') {
     var x  = -1 * ((vw - ew) / 2)
     var y  = -1 * ((vh - eh) / 2)
     var t  = client.mapper.delay
-    if (($('#map_container').prop('scrollTop') == 0) && ($('#map_container').prop('scrollleft') == 0)) {
+    if (($('#map_container').prop('scrollTop') == 0) && ($('#map_container').prop('scrollLeft') == 0)) {
       t = 0
     }
     if (map.previousZoom != map.zoom) {
