@@ -596,7 +596,7 @@ gmcpf.ireTargetrequest = function(data) {
 gmcpf.ireTargetinfo = function(data) {
   var tg = parseInt(data.id)
   var is_player = (tg == -1)
-  if ((!is_player) && tg != client.current_target())) { return }
+  if ((!is_player) && (tg != client.current_target())) { return }
   var desc = data.short_desc
   var hp = is_player ? undefined : data.hpperc
   client.set_current_target_info(desc, hp, is_player) }
