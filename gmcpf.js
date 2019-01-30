@@ -466,7 +466,7 @@ gmcpf.ireTasklist = function(data) {
       var gid   = 0
       for (var g = 0; g < grouporder.length; ++g) {
         var group = grouporder[g]
-        if (groups[group] == null) || (groups[group].length == 0)) { continue }
+        if ((groups[group] == null) || (groups[group].length == 0)) { continue }
         var section = ''
         gid++
         for (var idx = 0; idx < groups[group].length; ++idx) {
