@@ -508,7 +508,6 @@ gmcpf.ireTimelist = function(data) {
 gmcpf.ireTimeupdate = function(data) {
   for (var k in data) { GMCP.Time[k] = data[k] } }
   
-/*
 gmcpf.roominfo = function(data) {
   setTimeout(function() {
     var map = client.mapper
@@ -559,6 +558,7 @@ gmcpf.roominfo = function(data) {
   }, 0)
   client.handle_event('GMCP', 'Room.Info', data.num) }
 
+/*
 gmcpf.ireComposeredit = function(data) {
   var composer_edit = data
   if (composer_edit.title != '') { $('#composer_title').html(composer_edit.title) }
