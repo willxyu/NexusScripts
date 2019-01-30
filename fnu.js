@@ -114,3 +114,26 @@ if (typeof client != 'undefined') {
  }
 }
 
+// Mapper Enhancements
+if (typeof client != 'undefined' && typeof client.mapper != 'undefined') {
+  client.mapper.delay = 70
+  client.mapper.center_map = function(el) {
+    var map = client.mapper
+    if (el.length == 0) { return }
+    var vw = $('#map_container').width()
+    var vh = $('#map_container').height()
+    var ew = el.width()
+    var eh = el.height()
+    var x  = -1 * ((vw - ew) / 2)
+    var y  = -1 * ((vh - eh) / 2)
+    var t  = client.mapper.delay
+    if (($('#map_container').prop('scrollTop') == 0) && ($('#map_container').prop('scrollleft') == 0)) {
+      t = 0
+    }
+    if (map.previousZoom != map.zoom)
+      t = 0  
+    }
+    map.previousZoom = map.zoom
+    $('#map_container').scrollTo(el, t, {offset: { top: y, left: x }})
+  }
+}
