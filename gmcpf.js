@@ -64,7 +64,7 @@ gmcpf.init = function() {
       }
     })
   } }
-/*
+
 gmcpf.charname = function(data) {
   GMCP.Character = data
   logged_in      = true
@@ -74,7 +74,7 @@ gmcpf.charname = function(data) {
   setTimeout( function() { if (client.load_settings) { gmcp_import_system() } }, 1000 ) }
 
 gmcpf.charsvars = function(data) { GMCP.StatusVars = data }
-
+/*
 gmcpf.status = function(data) {
   if (GMCP.Status == null) { GMCP.Status = {} }
   var s = data
