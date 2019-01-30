@@ -340,7 +340,6 @@ gmcpf.ireDisplayohmap = function(data) {
   
 gmcpf.ireDisplaybActions = function(data) { bottom_buttons_set_defaults(data) }
 
-/*
 gmcpf.commChannstart = function(data) {
   var res = {}
       res.channel = data
@@ -420,7 +419,7 @@ gmcpf.commChannplayers = function(data) {
       $('#div_who_players > .who_name').click(function() { send_direct('honours ' + $(this).html()) })
     })
   }, 0) }
-
+/*
 gmcpf.ireRiftchange = function(data) {
   var name = data.name
   if (data.amount) {
