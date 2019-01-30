@@ -419,7 +419,7 @@ gmcpf.commChannplayers = function(data) {
       $('#div_who_players > .who_name').click(function() { send_direct('honours ' + $(this).html()) })
     })
   }, 0) }
-/*
+
 gmcpf.ireRiftchange = function(data) {
   var name = data.name
   if (data.amount) {
@@ -440,6 +440,7 @@ gmcpf.ireRiftlist = function(data) {
   }
   setTimeout(function() { client.render_rift() }, 0) }
 
+/*
 gmcpf.ireTasklist = function(data) {
   GMCP.TaskList = {}
   setTimeout( function() {
