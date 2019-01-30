@@ -205,6 +205,7 @@ gmcpf.roomAddplayer = function(data) {
     client.handle_event('GMCP', 'Room.AddPlayer', data.name) 
   } }
 
+/*
 gmcpf.roomRemoveplayer = function(data) {
   var name = data.toLowerCase()
   $('#div_room_players #' + name).remove()
@@ -221,7 +222,6 @@ gmcpf.roomplayers = function(data) {
     }
   }, 0) }
 
-/*
 gmcpf.charAdditems = function(data) {
   var div_id = itemlist_divid( data.location, data.item )
   if (div_id == null) { return }
