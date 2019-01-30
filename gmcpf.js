@@ -1,4 +1,3 @@
-
 gmcpf = typeof gmcpf != 'undefined' ? gmcpf : {}
 
 gmcpf.map = {
@@ -100,7 +99,7 @@ gmcpf.vitals = function(data) {
   parse_gauges(data)
   if (client.game == 'Lusternia') { parse_lusternia_wounds(data) }
   client.handle_event('GMCP', 'Char.Vitals', '') }
-/*
+
 gmcpf.skillgroups = function(data) {
   $('#tbl_skills').html('<table><tbody></tbody></table>')
   var skills = $('#tbl_skills tbody')
@@ -613,7 +612,7 @@ gmcpf.leanDefencelist = function(data) {
 gmcpf.leanDefenceadd = function(data) { GMCP.Defences[data.name] = data }
 gmcpf.leanDefenceremove = function(data) {
   for (var i = 0; i < data.length; ++i) { delete GMCP.Defences[data[i]] } }
-*/
+/* */
   
 gmcpf.init()
 
