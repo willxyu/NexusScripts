@@ -126,7 +126,7 @@ gmcpf.skillList = function(data) {
     div += '<table id=\'skill_listing\'>'
     for (var i = 0; i < data.list.length; ++i) {
       var desc = ''
-      if (data.descs && (data.desc.length > i)) { desc = data.descs[i] }
+      if (data.descs && (data.descs.length > i)) { desc = data.descs[i] }
       div += '<tr class=\'skill_name\' group=\'' + data.group + '\' skill=\'' + data.list[i] + '\'><td>' + data.list[i] + '</td><td>' + desc + '</td></tr>'
     }
     div += '</table>'
