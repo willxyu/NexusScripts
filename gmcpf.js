@@ -64,7 +64,7 @@ gmcpf.init = function() {
       if (typeof gmcpf[m[m.use]] == 'function') {
         if (gmcpf.debug) {
           console.log('running ' + m.use + ' for event: ' + n + '.')
-          console.log(m[m.use])
+          console.log(gmcpf[m[m.use]])
           console.log(data)
         }
         gmcpf[m[m.use]](data) 
