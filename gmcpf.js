@@ -471,7 +471,7 @@ gmcpf.ireTasklist = function(data) {
         gid++
         for (var idx = 0; idx < groups[group].length; ++idx) {
           var i = groups[group][idx]
-          var html = task_hteml(type, data[i])
+          var html = task_html(type, data[i])
           section += '<div id=\'' + type + data[i].id + '\' class=\'task_group_' + type + gid + '\'>' + html + '</div>'
         }
         section = '<div class=\'subsection\'><div class=\'heading\'>' + client.escape_html(group) + '</div><div class=\'section_content\'>' + section + '</div>'
