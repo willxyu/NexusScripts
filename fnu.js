@@ -116,7 +116,7 @@ if (typeof client != 'undefined') {
 
 // Mapper Enhancements
 if (typeof client != 'undefined' && typeof client.mapper != 'undefined') {
-  client.mapper.delay = 40
+  client.mapper.delay = 160
   client.mapper.center_map = function(el) {
     var map = client.mapper
     if (el.length == 0) { return }
