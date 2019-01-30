@@ -117,7 +117,7 @@ gmcpf.skillgroups = function(data) {
     send_GMCP('Char.Skills.Get', {'group': $(this).find('.skill_group').attr('group')})
     GMCP.WaitingForSkills = true
   }) }
-
+/* 
 gmcpf.skillList = function(data) {
   if (GMCP.WaitingForSkills == true) {
     var dsl = $('<div/>')
@@ -612,7 +612,7 @@ gmcpf.leanDefencelist = function(data) {
 gmcpf.leanDefenceadd = function(data) { GMCP.Defences[data.name] = data }
 gmcpf.leanDefenceremove = function(data) {
   for (var i = 0; i < data.length; ++i) { delete GMCP.Defences[data[i]] } }
-/* */
+*/
   
 gmcpf.init()
 
