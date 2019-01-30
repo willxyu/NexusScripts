@@ -59,8 +59,8 @@ gmcpf.init = function() {
   for (var k in gmcpf.map) {
     let m = gmcpf.map[k]
     let n = k
-    $(document).off('gmcp-' + k)
-    $(document).on('gmcp-' + k, function(event, data) {
+    $(document).off('gmcp-' + n)
+    $(document).on('gmcp-' + n, function(event, data) {
       if (typeof gmcpf[m[m.use]] == 'function') {
         if (gmcpf.debug) {
           console.log('running ' + m.use + ' for event: ' + n + '.')
@@ -440,7 +440,6 @@ gmcpf.ireRiftlist = function(data) {
   }
   setTimeout(function() { client.render_rift() }, 0) }
 
-/*
 gmcpf.ireTasklist = function(data) {
   GMCP.TaskList = {}
   setTimeout( function() {
@@ -487,6 +486,7 @@ gmcpf.ireTasklist = function(data) {
     }
   }, 0) }
 
+/*
 gmcpf.ireTaskupdate = function(data) {
   setTimeout( function() {
     var types = ['task', 'quest', 'achievement']
