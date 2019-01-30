@@ -59,9 +59,8 @@ gmcpf.init = function() {
     let m = gmcpf.map[k]
     $(document).off('gmcp-' + k)
     $(document).on('gmcp-' + k, function(event, data) {
-      console.log(data)
       if (typeof gmcpf[m[m.use]] == 'function') {
-        gmcpf[m[m.use]](data[0]) 
+        gmcpf[m[m.use]](data) 
       }
     })
   } }
