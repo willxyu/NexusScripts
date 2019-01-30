@@ -197,12 +197,11 @@ gmcpf.defenceremove = function(data) {
   client.draw_affdef_tab()
   client.handle_event('GMCP', 'Char.Afflictions.Add', data) }
 
-/*
 gmcpf.roomAddplayer = function(data) {
   if (data.name != GMCP.Character.name) {
     var name = data.name.toLowerCase()
     $('#div_room_players #' + name).remove()
-    $('#div_room_players).append('<p class=\'no_border item\' id=\'' + name + '\'><span class=\'item_icon\'></span><span class=\'player_name\'>' + data.fullname + '</span></p>')
+    $('#div_room_players').append('<p class=\'no_border item\' id=\'' + name + '\'><span class=\'item_icon\'></span><span class=\'player_name\'>' + data.fullname + '</span></p>')
     client.handle_event('GMCP', 'Room.AddPlayer', data.name) 
   } }
 
@@ -300,6 +299,7 @@ gmcpf.charListitems = function(data) {
     update_item_visibility()
   }, 0) }
 
+/*
 gmcpf.ireDisplayhelp = function(data) {
   if (client.popups_help !== true) { return }
   var res = {}
