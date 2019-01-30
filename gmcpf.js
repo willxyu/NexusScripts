@@ -221,6 +221,7 @@ gmcpf.roomplayers = function(data) {
     }
   }, 0) }
 
+/*
 gmcpf.charAdditems = function(data) {
   var div_id = itemlist_divid( data.location, data.item )
   if (div_id == null) { return }
@@ -299,7 +300,6 @@ gmcpf.charListitems = function(data) {
     update_item_visibility()
   }, 0) }
 
-/*
 gmcpf.ireDisplayhelp = function(data) {
   if (client.popups_help !== true) { return }
   var res = {}
