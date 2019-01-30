@@ -582,7 +582,7 @@ gmcpf.ireSoundstopall = function(data) {
   fadeout = false
   if (typeof data.fadeout_csec != 'undefined') { fadeout = data.fadeout_csec * 1000 }
   stop_all_sounds(fadeout) }
-/*
+
 gmcpf.ireTargetset = function(data) {
   var target = data
   var ntarget = parseInt(target)
@@ -602,7 +602,7 @@ gmcpf.ireTargetinfo = function(data) {
   client.set_current_target_info(desc, hp, is_player) }
 
 gmcpf.ireMiscpwd = function(data) { dropzone_kickoff(data) }
-
+/*
 // Lean Section
 gmcpf.leanSkillgroups = function(data) { }
 
