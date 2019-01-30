@@ -58,11 +58,15 @@ gmcpf.map = {
 gmcpf.init = function() {
   for (var k in gmcpf.map) {
     let m = gmcpf.map[k]
+    let n = k
     $(document).off('gmcp-' + k)
     $(document).on('gmcp-' + k, function(event, data) {
       if (typeof gmcpf[m[m.use]] == 'function') {
-        console.log('running ' + m.use + ' for event: ' + k + '.')
-        console.log(data)
+        if (gmcpf.debug) {
+          console.log('running ' + m.use + ' for event: ' + n + '.')
+          console.log(m[m.use])
+          console.log(data)
+        }
         gmcpf[m[m.use]](data) 
       }
     })
