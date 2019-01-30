@@ -558,7 +558,6 @@ gmcpf.roominfo = function(data) {
   }, 0)
   client.handle_event('GMCP', 'Room.Info', data.num) }
 
-/*
 gmcpf.ireComposeredit = function(data) {
   var composer_edit = data
   if (composer_edit.title != '') { $('#composer_title').html(composer_edit.title) }
@@ -622,7 +621,8 @@ gmcpf.leanDefencelist = function(data) {
 gmcpf.leanDefenceadd = function(data) { GMCP.Defences[data.name] = data }
 gmcpf.leanDefenceremove = function(data) {
   for (var i = 0; i < data.length; ++i) { delete GMCP.Defences[data[i]] } }
-*/
+
+/**/
   
 gmcpf.init()
 
