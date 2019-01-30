@@ -114,6 +114,8 @@ gmcpf.skillgroups = function(data) {
   // reduced multiple appending to single call
   skills.append(str)
   $('#tbl_skills tr').css('cursor', 'pointer').click(function() {
+    send_GMCP('Char.Skills.Get', {group: $(this).find('.skill_group').attr('group')})
+    GMCP.WaitingForSkills = true
   })
 }
 /* 
