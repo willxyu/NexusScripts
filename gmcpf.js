@@ -197,6 +197,7 @@ gmcpf.defenceremove = function(data) {
   client.draw_affdef_tab()
   client.handle_event('GMCP', 'Char.Afflictions.Add', data) }
 
+/*
 gmcpf.roomAddplayer = function(data) {
   if (data.name != GMCP.Character.name) {
     var name = data.name.toLowerCase()
@@ -205,7 +206,6 @@ gmcpf.roomAddplayer = function(data) {
     client.handle_event('GMCP', 'Room.AddPlayer', data.name) 
   } }
 
-/*
 gmcpf.roomRemoveplayer = function(data) {
   var name = data.toLowerCase()
   $('#div_room_players #' + name).remove()
