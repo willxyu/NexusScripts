@@ -582,7 +582,7 @@ gmcpf.ireSoundstopall = function(data) {
   fadeout = false
   if (typeof data.fadeout_csec != 'undefined') { fadeout = data.fadeout_csec * 1000 }
   stop_all_sounds(fadeout) }
-
+/*
 gmcpf.ireTargetset = function(data) {
   var target = data
   var ntarget = parseInt(target)
@@ -622,7 +622,7 @@ gmcpf.leanDefenceadd = function(data) { GMCP.Defences[data.name] = data }
 gmcpf.leanDefenceremove = function(data) {
   for (var i = 0; i < data.length; ++i) { delete GMCP.Defences[data[i]] } }
 
-/**/
+*/
   
 gmcpf.init()
 
