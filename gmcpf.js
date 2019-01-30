@@ -1,5 +1,7 @@
 gmcpf = typeof gmcpf != 'undefined' ? gmcpf : {}
 
+gmcpf.debug = true
+
 gmcpf.map = {
   ['Char.Name']                : {use: 'original', original: 'charname',             lean: 'leanCharname'             },
   ['Char.StatusVars']          : {use: 'original', original: 'charsvars',            lean: 'leanCharsvars'            },
@@ -59,6 +61,8 @@ gmcpf.init = function() {
     $(document).off('gmcp-' + k)
     $(document).on('gmcp-' + k, function(event, data) {
       if (typeof gmcpf[m[m.use]] == 'function') {
+        console.log('running ' + m.use + '.')
+        console.log(data)
         gmcpf[m[m.use]](data) 
       }
     })
@@ -137,7 +141,6 @@ gmcpf.skillList = function(data) {
     GMCP.WaitingForSkills = false
   } }
 
-/* 
 gmcpf.skillinfo = function(data) {
   var dsl = $('<div/>')
   var div = '<div id=\'group_skills_skill\' class=\'\' title=\'' + ucfirst(data.skill) + '\' style=\'font-size: 0.8em;\'>'
@@ -150,6 +153,7 @@ gmcpf.skillinfo = function(data) {
   cm_dialog('#', {id: 'skill_info', top_align: 40, title: ucfirst(data.skill), width: ($('#container').width() * 0.5), height: ($('#container').height() * 0.5), content: dsl })
 }
 
+/* 
 gmcpf.afflictionlist = function(data) {
   GMCP.Afflictions = {}
   for (var i = 0; i < data.length; ++i) {
