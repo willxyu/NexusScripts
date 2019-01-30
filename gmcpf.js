@@ -156,8 +156,7 @@ gmcpf.skillinfo = function(data) {
   dsl.append(div)
   cm_dialog('#', {id: 'skill_info', top_align: 40, title: ucfirst(data.skill), width: ($('#container').width() * 0.5), height: ($('#container').height() * 0.5), content: dsl })
 }
-
-/* 
+ 
 gmcpf.afflictionlist = function(data) {
   GMCP.Afflictions = {}
   for (var i = 0; i < data.length; ++i) {
@@ -198,6 +197,7 @@ gmcpf.defenceremove = function(data) {
   client.draw_affdef_tab()
   client.handle_event('GMCP', 'Char.Afflictions.Add', data) }
 
+/*
 gmcpf.roomAddplayer = function(data) {
   if (data.name != GMCP.Character.name) {
     var name = data.name.toLowerCase()
