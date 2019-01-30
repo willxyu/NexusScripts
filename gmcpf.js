@@ -299,7 +299,6 @@ gmcpf.charListitems = function(data) {
     update_item_visibility()
   }, 0) }
 
-/*
 gmcpf.ireDisplayhelp = function(data) {
   if (client.popups_help !== true) { return }
   var res = {}
@@ -559,6 +558,7 @@ gmcpf.roominfo = function(data) {
   }, 0)
   client.handle_event('GMCP', 'Room.Info', data.num) }
 
+/*
 gmcpf.ireComposeredit = function(data) {
   var composer_edit = data
   if (composer_edit.title != '') { $('#composer_title').html(composer_edit.title) }
