@@ -118,7 +118,7 @@ gmcpf.skillgroups = function(data) {
     GMCP.WaitingForSkills = true
   })
 }
-/* 
+
 gmcpf.skillList = function(data) {
   if (GMCP.WaitingForSkills == true) {
     var dsl = $('<div/>')
@@ -137,6 +137,7 @@ gmcpf.skillList = function(data) {
     GMCP.WaitingForSkills = false
   } }
 
+/* 
 gmcpf.skillinfo = function(data) {
   var dsl = $('<div/>')
   var div = '<div id=\'group_skills_skill\' class=\'\' title=\'' + ucfirst(data.skill) + '\' style=\'font-size: 0.8em;\'>'
