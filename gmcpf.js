@@ -340,6 +340,7 @@ gmcpf.ireDisplayohmap = function(data) {
   
 gmcpf.ireDisplaybActions = function(data) { bottom_buttons_set_defaults(data) }
 
+/*
 gmcpf.commChannstart = function(data) {
   var res = {}
       res.channel = data
@@ -558,7 +559,6 @@ gmcpf.roominfo = function(data) {
   }, 0)
   client.handle_event('GMCP', 'Room.Info', data.num) }
 
-/*
 gmcpf.ireComposeredit = function(data) {
   var composer_edit = data
   if (composer_edit.title != '') { $('#composer_title').html(composer_edit.title) }
