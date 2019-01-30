@@ -1,5 +1,5 @@
 
-gmcpf = typeof gmcpf != 'undefined' || {}
+gmcpf = typeof gmcpf != 'undefined' ? gmcpf : {}
 
 gmcpf.map = {
   ['Char.Name']                : {use: 'original', original: 'charname',             lean: 'leanCharname'             },
