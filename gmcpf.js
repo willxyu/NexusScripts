@@ -61,7 +61,7 @@ gmcpf.init = function() {
     $(document).off('gmcp-' + k)
     $(document).on('gmcp-' + k, function(event, data) {
       if (typeof gmcpf[m[m.use]] == 'function') {
-        console.log('running ' + m.use + '.')
+        console.log('running ' + m.use + ' for event: ' + k + '.')
         console.log(data)
         gmcpf[m[m.use]](data) 
       }
