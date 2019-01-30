@@ -486,7 +486,6 @@ gmcpf.ireTasklist = function(data) {
     }
   }, 0) }
 
-/*
 gmcpf.ireTaskupdate = function(data) {
   setTimeout( function() {
     var types = ['task', 'quest', 'achievement']
@@ -509,6 +508,7 @@ gmcpf.ireTimelist = function(data) {
 gmcpf.ireTimeupdate = function(data) {
   for (var k in data) { GMCP.Time[k] = data[k] } }
   
+/*
 gmcpf.roominfo = function(data) {
   setTimeout(function() {
     var map = client.mapper
