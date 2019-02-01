@@ -1,0 +1,146 @@
+
+/** Packages. Each object has these properties:
+ - name - also used as identifier
+ - description
+ - enabled
+ - items - this is the core group
+ */
+
+var packages;
+
+var package_create = function(name, description) {
+    name = name.toLowerCase().trim();
+    if ((name == 'all') || (name == 'main')) return;  // these names are not allowed
+    if (package_exists(name)) package_remove(name);
+    var pkg = {};
+    pkg.name = name;
+    pkg.enabled = true;
+    pkg.description = description;
+    pkg.type = 'group';   // so that we can treat packages and groups the same
+    pkg.id = 1;
+    pkg.items = [];
+    client.packages.push(pkg);
+}
+
+var package_exists = function(name) {
+    name = name.toLowerCase().trim();
+    for (var i = 0; i < client.packages.length; ++i)
+        if (client.packages[i].name == name)
+            return i + 1;
+    return 0;
+}
+
+var get_package = function(name) {
+    name = name.toLowerCase().trim();
+    for (var i = 0; i < client.packages.length; ++i)
+        if (client.packages[i].name == name)
+            return client.packages[i];
+    return undefined;
+}
+
+var package_remove = function(name) {
+    var idx = client.package_exists(name) - 1;
+    if (idx < 0) return;
+    client.packages.splice(idx, 1);
+}
+
+var package_enable = function(name, enable) {
+    var pkg = client.get_package(name);
+    if (!pkg) return;
+    if (pkg.enabled === enable) return;
+    pkg.enabled = enable;
+
+    if (enable)
+        client.run_function("onLoad", undefined, pkg.name);
+    else
+        client.run_function("onUnload", undefined, pkg.name);
+
+    client.system_changed = true;
+}
+
+var traverse_packages = function(fn, include_groups) {
+    for (var p = 0; p < client.packages.length; ++p) {
+        if (!client.packages[p].enabled) continue;
+        for (var i = 0; i < client.packages[p].items.length; ++i) {
+            if (client.packages[p].items[i].type === "group")
+                reflex_traverse(fn, client.packages[p].items[i], include_groups, false);
+            else
+                fn(client.packages[p].items[i]);
+        }
+    }
+}
+
+// we are nerging 'ref' into 'group'
+var reflex_package_merge_reflexes_recurs = function(group, ref, pkg) {
+    if (!ref.items) return;
+    if (!ref.items.length) return;
+
+    // go over the items to import
+    for (var i = 0; i < ref.items.length; ++i) {
+        var item = ref.items[i];
+        // if the item is a group, check if a group of the same name exists at this level
+        if (item.type == 'group' && item.name.length) {
+            var found;
+            for (var j = 0; j < group.items.length; ++j) {
+                if (item.name === group.items[j].name) {
+                    found = group.items[j];
+                    break;
+                }
+            }
+            // if the group does exist, we need to merge it in, so do that
+            if (found !== undefined) {
+                reflex_package_merge_reflexes_recurs(found, item, pkg);
+                continue;
+            }
+        }
+        // and if it does not exist, we add everything
+        var newr = reflex_duplicate(item, group, pkg);
+        if (newr.type == 'group') {
+            for (var i = 0; i < item.items.length; ++i)
+                reflex_package_merge_reflexes_recurs(newr, item.items[i], pkg);
+        }
+    }
+}
+
+var reflex_package_merge_reflexes = function(pkg, ref) {
+    var group = pkg ? pkg : client.reflexes;
+
+    // process everything recursively
+    client.reflex_package_merge_reflexes_recurs(group, ref, pkg ? pkg.name : undefined);
+}
+
+var determine_package_for_reflex = function(r) {
+    while (r.p) r = r.p;
+    for (var p = 0; p < client.packages.length; ++p)
+        if (r === client.packages[p]) return client.packages[p];
+    return null;   // not in a package
+}
+
+// empty func for compatibility with old settings (they call this)
+var load_all_reflex_packages = function() { }
+
+var create_default_reflex_packages = function() {
+    if (!client.package_exists('numpad movement')) {
+        client.package_create('numpad movement', "Move around the world with your keyboard's number pad. 8=north, 9=northeast, etc. Use '/' for in, '*' for out, '-' for up and '+' for down. The 5 key will look at the room you're in.");
+        var pkg = client.get_package('numpad movement');
+        var dirs = { 103: 'nw', 104: 'n', 105: 'ne', 100: 'w', 101: 'look', 102: 'e', 97: 'sw', 98: 's', 99: 'se', 111: 'in', 106: 'out', 109: 'up', 107: 'down'};
+        for (var v in dirs) {
+            var key = client.reflex_create(pkg, dirs[v], 'keybind', 'numpad movement');
+            key.key = v;
+            key.key_alt = false; key.key_ctrl = false; key.key_shift = false;
+            key.actions = [];
+            key.actions.push({command: dirs[v]});
+        }
+    }
+/*
+    if (!client.package_exists('targeting')) {
+        client.package_create('targeting', "This will allow you to set an enemy target by typing, in the game, for instance, \"t Epicurus\" to target Epicurus. Now the game knows who your target is, and you can just punch \"punch @tar\" to \"punch Epicurus.\"");
+        var pkg = client.get_package('targeting');
+        var alias = client.reflex_create(pkg, '', 'alias', 'targeting');
+        alias.text = 't';
+        alias.actions.push({command: '@set tar', prefix_suffix: true});
+    }
+*/
+}
+
+
