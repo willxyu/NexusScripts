@@ -53,8 +53,6 @@ if (typeof client != 'undefined') {
        if (temp.length) { client.handle_on_msg_recv(temp) }
      }
      client.run_function('onBlock', null, 'ALL')
-     
-console.log(lines)
      client.display_text_block(lines)
      client.current_line = undefined
      client.current_block = undefined
